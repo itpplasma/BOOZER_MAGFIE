@@ -56,6 +56,11 @@ MODULE neo_input
 
   REAL(kind=dp),    DIMENSION(:,:),   ALLOCATABLE :: rmnc,  zmnc,  lmnc
   REAL(kind=dp),    DIMENSION(:,:),   ALLOCATABLE :: bmnc
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  REAL(kind=dp),    DIMENSION(:,:),   ALLOCATABLE :: rmns,  zmns,  lmns
+  REAL(kind=dp),    DIMENSION(:,:),   ALLOCATABLE :: bmns
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
   REAL(kind=dp),    DIMENSION(:),     ALLOCATABLE :: b00
 
   REAL(kind=dp) :: flux, psi_pr
@@ -81,7 +86,12 @@ MODULE neo_actual_spectra
 ! Actual spectra on flux surface
   USE neo_precision
   REAL(kind=dp),    DIMENSION(:),     ALLOCATABLE :: s_rmnc, s_zmnc, s_lmnc
-  REAL(kind=dp),    DIMENSION(:),     ALLOCATABLE :: s_bmnc  
+  REAL(kind=dp),    DIMENSION(:),     ALLOCATABLE :: s_bmnc
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  REAL(kind=dp),    DIMENSION(:),     ALLOCATABLE :: s_rmns, s_zmns, s_lmns
+  REAL(kind=dp),    DIMENSION(:),     ALLOCATABLE :: s_bmns
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
 END MODULE neo_actual_spectra
 
 MODULE neo_spline_data
@@ -90,7 +100,14 @@ MODULE neo_spline_data
   REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_rmnc,b_rmnc,c_rmnc,d_rmnc 
   REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_zmnc,b_zmnc,c_zmnc,d_zmnc 
   REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_lmnc,b_lmnc,c_lmnc,d_lmnc 
-  REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_bmnc,b_bmnc,c_bmnc,d_bmnc 
+  REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_bmnc,b_bmnc,c_bmnc,d_bmnc
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_rmns,b_rmns,c_rmns,d_rmns 
+  REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_zmns,b_zmns,c_zmns,d_zmns 
+  REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_lmns,b_lmns,c_lmns,d_lmns 
+  REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: a_bmns,b_bmns,c_bmns,d_bmns
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
 
   REAL(kind=dp), DIMENSION(:),   ALLOCATABLE :: a_iota,b_iota
   REAL(kind=dp), DIMENSION(:),   ALLOCATABLE :: c_iota,d_iota

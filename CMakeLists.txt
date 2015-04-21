@@ -17,6 +17,7 @@ add_library(boozer_magfie
 	magfie.f90
 #	magfie_test.f90
 	neo_magfie.f90
+	neo_mod.f90
 	neo_modules.f90
 	neo_sub.f90
 	nrutil.f90
