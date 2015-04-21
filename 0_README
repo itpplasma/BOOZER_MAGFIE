@@ -1,0 +1,23 @@
+In order to perform an out-of-source build:
+1. cd Build (or another directory)
+2. cmake .. (.. points to the CMakeList.txt)
+3. make
+
+For new projects:
+1. Copy CMakeLists.txt and adapt
+2. Create a Build-directory (e.g. Build/)
+and perform as described above.
+
+For different build-configurations:
+1. Directory Build-Release:
+   Run cmake -DCMAKE_BUILD_TYPE=Release .. 
+   instead of cmake .. in the build-directory
+2. Directory Build-Debug:
+   Run cmake -DCMAKE_BUILD_TYPE=Debug ..
+   instead of cmake .. in the build-directory
+
+   CMake automatically sets the appropriate compiler flags.
+
+Hints:
+- make VERBOSE=1 for more debug information of the build process
+- Remove CMakeCache.txt if CMake does not recognize changes of CMakeLists.txt
