@@ -50,17 +50,20 @@ MODULE magfie_mod
   USE neo_precision,  ONLY: dp 
   IMPLICIT NONE
 
+  !! Modifications by Andreas F. Martitsch (09.03.2014)
+  ! Optional output (necessary for modeling the magnetic rotation)
   INTERFACE magfie
-     MODULE PROCEDURE magfie_x
-  END INTERFACE
+     MODULE PROCEDURE magfie_x, magfie_x1, magfie_x2
+  END INTERFACE magfie
+  !! End Modifications by Andreas F. Martitsch (09.03.2014)
 
   INTERFACE magfie_deallocate
      MODULE PROCEDURE magfie_deallocate_x
-  END INTERFACE
+  END INTERFACE magfie_deallocate
 
   INTERFACE stevvo
      MODULE PROCEDURE stevvo_x
-  END INTERFACE
+  END INTERFACE stevvo
 
 CONTAINS
 
@@ -76,10 +79,50 @@ CONTAINS
     CALL neo_magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl)
   END SUBROUTINE magfie_x
 
+  !! Modifications by Andreas F. Martitsch (09.03.2014)
+  ! Optional output (necessary for modeling the magnetic rotation)
+  SUBROUTINE magfie_x1( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl, bcovar_s_hat_der)
+    USE neo_magfie_mod, ONLY: neo_magfie
+    REAL(dp), DIMENSION(:),       INTENT(in)         :: x
+    REAL(dp),                     INTENT(out)        :: bmod
+    REAL(dp),                     INTENT(out)        :: sqrtg
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: bder
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hcovar
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hctrvr
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hcurl
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: bcovar_s_hat_der
+    CALL neo_magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl, bcovar_s_hat_der)
+  END SUBROUTINE magfie_x1
+  !! End Modifications by Andreas F. Martitsch (09.03.2014)
+
+  !! Modifications by Andreas F. Martitsch (13.11.2014)
+  ! Optional output for NTV output
+  SUBROUTINE magfie_x2( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl, bcovar_s_hat_der, R, Z)
+    USE neo_magfie_mod, ONLY: neo_magfie
+    REAL(dp), DIMENSION(:),       INTENT(in)         :: x
+    REAL(dp),                     INTENT(out)        :: bmod
+    REAL(dp),                     INTENT(out)        :: sqrtg
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: bder
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hcovar
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hctrvr
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hcurl
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: bcovar_s_hat_der
+    REAL(dp),                     INTENT(out)        :: R
+    REAL(dp),                     INTENT(out)        :: Z
+    CALL neo_magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl, bcovar_s_hat_der, R, Z)
+  END SUBROUTINE magfie_x2
+  !! End Modifications by Andreas F. Martitsch (13.11.2014)
+  
+  !! Modifications by Andreas F. Martitsch (11.03.2014)
+  ! Deallocate the storage arrays for the 2d spline interpolation
+  ! (over the flux-surface) of the additionally needed metric
+  ! tensor elements
   SUBROUTINE magfie_deallocate_x
     USE neo_magfie_mod, ONLY: curr_tor_array, curr_tor_s_array, &
          curr_pol_array, curr_pol_s_array, iota_array,          &
          bmod_spl, bb_s_spl, bb_tb_spl, bb_pb_spl,              &
+         gstb_spl, gspb_spl, gstb_tb_spl, gspb_tb_spl,          &
+         gstb_pb_spl, gspb_pb_spl, R_spl,                       &
          magfie_newspline
     
     IF ( ALLOCATED( curr_tor_array ) )   DEALLOCATE( curr_tor_array )
@@ -91,9 +134,19 @@ CONTAINS
     IF ( ALLOCATED( bb_s_spl ) )         DEALLOCATE( bb_s_spl )
     IF ( ALLOCATED( bb_tb_spl ) )        DEALLOCATE( bb_tb_spl )
     IF ( ALLOCATED( bb_pb_spl ) )        DEALLOCATE( bb_pb_spl )
+    !! Modifications by Andreas F. Martitsch (11.03.2014)
+    IF ( ALLOCATED( gstb_spl ) )         DEALLOCATE( gstb_spl )
+    IF ( ALLOCATED( gspb_spl ) )         DEALLOCATE( gspb_spl )
+    IF ( ALLOCATED( gstb_tb_spl ) )      DEALLOCATE( gstb_tb_spl )
+    IF ( ALLOCATED( gspb_tb_spl ) )      DEALLOCATE( gspb_tb_spl )
+    IF ( ALLOCATED( gstb_pb_spl ) )      DEALLOCATE( gstb_pb_spl )
+    IF ( ALLOCATED( gspb_pb_spl ) )      DEALLOCATE( gspb_pb_spl )
+    IF ( ALLOCATED( R_spl ) )            DEALLOCATE( R_spl )
+    !! End Modifications by Andreas F. Martitsch (11.03.2014)
     magfie_newspline = 1
     
   END SUBROUTINE magfie_deallocate_x
+  !! End Modifications by Andreas F. Martitsch (11.03.2014)
 
   SUBROUTINE stevvo_x( bigR, R0i, L1i, cbfi, bz0i, bf0 )
     USE neo_input,  ONLY: nfp 
