@@ -6,12 +6,18 @@ project (boozer_magfie)
 enable_language(Fortran)
 
 ### Define the name of the executable
-#set(PROJECT_EXE_NAME "magfie_test.x")                  # Define the name
+set(PROJECT_EXE_NAME "magfie_test.x")                  # Define the name
+set(EXECUTABLE_OUTPUT_PATH .)
 
 ### Set compiler flags
 set(CMAKE_Fortran_MODULE_DIRECTORY ./OBJS)
 
 ### Define executable
+add_executable(${PROJECT_EXE_NAME}
+  magfie_test.f90
+  )
+  
+### Define library
 add_library(boozer_magfie
 	inter_interfaces.f90
 	magfie.f90
@@ -28,11 +34,14 @@ add_library(boozer_magfie
 	spline_cof.f90       # New
 )
 
+add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
+
 ### Linking
-#target_link_libraries(${PROJECT_EXE_NAME}
-#	lapack
-#	blas
-#)
+target_link_libraries(${PROJECT_EXE_NAME}
+	lapack
+	blas
+	boozer_magfie
+)
 
 ### For make install
 # install (TARGETS ${PROJECT_EXE_NAME} DESTINATION /temp/gernot_k/)

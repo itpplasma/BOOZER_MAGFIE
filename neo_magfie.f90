@@ -236,8 +236,8 @@ CONTAINS
        CALL neo_read_control()
        fluxs_interp = 1
        CALL neo_init(npsi)
-       PRINT *, 'theta_start,theta_end,phi_start,phi_end'
-       PRINT *, theta_start,theta_end,phi_start,phi_end
+       !PRINT *, 'theta_start,theta_end,phi_start,phi_end'
+       !PRINT *, theta_start,theta_end,phi_start,phi_end
     END IF
     !*******************************************************************
     ! Spline of surfaces in magfie_sarray
