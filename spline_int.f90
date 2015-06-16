@@ -143,10 +143,11 @@ SUBROUTINE splint_horner3_a(xa,a,b,c,d,swd,m,x_in,f,fp,fpp,fppp,&
 ! if (klo .ge. n) klo = n - 1
 ! khi = klo + 1
 
-!  Attention linear interpolation
-!  p = a(klo) + h * (b(klo) + h * (c(klo) + h * d(klo)))
-  delta = xa(khi) - xa(klo)
-  p = a(klo) + h * (b(klo) + delta * (c(klo) + delta * d(klo)))
+  p = a(klo) + h * (b(klo) + h * (c(klo) + h * d(klo)))
+  
+!  Next line would be linear interpolation 
+!  delta = xa(khi) - xa(klo)
+!  p = a(klo) + h * (b(klo) + delta * (c(klo) + delta * d(klo)))
 
   y = f(x,m) * p
 

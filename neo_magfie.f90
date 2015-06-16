@@ -61,6 +61,7 @@ MODULE neo_magfie_mod
   REAL(dp), DIMENSION(:), ALLOCATABLE              :: curr_pol_array
   REAL(dp), DIMENSION(:), ALLOCATABLE              :: curr_pol_s_array
   REAL(dp), DIMENSION(:), ALLOCATABLE              :: iota_array
+  REAL(dp), DIMENSION(:), ALLOCATABLE              :: iota_s_array
   REAL(dp), DIMENSION(:), ALLOCATABLE              :: pprime_array
   REAL(dp), DIMENSION(:), ALLOCATABLE              :: sqrtg00_array
 
@@ -92,6 +93,7 @@ MODULE neo_magfie_mod
   !! End Modifications by Andreas F. Martitsch (13.11.2014)
   
   REAL(dp) :: boozer_iota
+  REAL(dp) :: boozer_iota_s
   REAL(dp) :: boozer_sqrtg00
   !! Modifications by Andreas F. Martitsch (12.03.2014)
   ! boozer_curr_tor, boozer_curr_pol, boozer_psi_pr,
@@ -162,7 +164,7 @@ CONTAINS
 
     REAL(dp)                                         :: bmnc, bmnc_s
     REAL(dp)                                         :: sinv, cosv
-    REAL(dp)                                         :: iota
+    REAL(dp)                                         :: iota, iota_s
     REAL(dp)                                         :: curr_tor, curr_tor_s
     REAL(dp)                                         :: curr_pol, curr_pol_s
     REAL(dp)                                         :: bb_s, bb_tb, bb_pb
@@ -275,6 +277,7 @@ CONTAINS
        ALLOCATE( curr_pol_array(magfie_sarray_len) )
        ALLOCATE( curr_pol_s_array(magfie_sarray_len) )
        ALLOCATE( iota_array(magfie_sarray_len) )
+       ALLOCATE( iota_s_array(magfie_sarray_len) )
        ALLOCATE( pprime_array(magfie_sarray_len) )
        ALLOCATE( sqrtg00_array(magfie_sarray_len) )
        !****************************************************************
@@ -905,11 +908,11 @@ CONTAINS
                swd, m0,                                                &
                s, tfone, tfzero, tfzero, tfzero,                       &
                curr_pol_array(k_es), curr_pol_s_array(k_es) ,ypp, yppp)    
-          swd = 0 ! no derivative
           CALL splint_horner3(es,                                      &
                a_iota, b_iota, c_iota, d_iota, swd, m0,                &
                s, tfone, tfzero, tfzero, tfzero,                       &
-               iota_array(k_es), yp, ypp, yppp)
+               iota_array(k_es), iota_s_array(k_es), ypp, yppp)
+          swd = 0 ! no derivative
           CALL splint_horner3(es,                                      &
                a_pprime, b_pprime, c_pprime, d_pprime, swd, m0,                &
                s, tfone, tfzero, tfzero, tfzero,                       &
@@ -942,6 +945,7 @@ CONTAINS
           curr_pol   = curr_pol_array(k_es)
           curr_pol_s = curr_pol_s_array(k_es)
           iota       = iota_array(k_es)
+          iota_s     = iota_s_array(k_es)
           s_pprime   = pprime_array(k_es) ! only local
           s_sqrtg00  = sqrtg00_array(k_es)
           ! ************************************************************
@@ -1097,11 +1101,10 @@ CONTAINS
             swd, m0,                                                 &
             x(1), tfone, tfzero, tfzero, tfzero,                     &
             curr_pol, curr_pol_s ,ypp, yppp)    
-       swd = 0 ! no derivative
        CALL splint_horner3(es,                                       &
             a_iota, b_iota, c_iota, d_iota, swd, m0,                 &
             x(1), tfone, tfzero, tfzero, tfzero,                     &
-            iota, yp, ypp, yppp)       
+            iota, iota_s, ypp, yppp)       
     END IF
 
     IF (magfie_result .EQ. 1) THEN
@@ -1191,6 +1194,7 @@ CONTAINS
     END IF
     
     boozer_iota = iota
+    boozer_iota_s = iota_s
     ! CAUTION: This quantity is only used by Klaus.
     ! Conversion from SI- to cgs-units has not yet been
     ! checked for this quantity
