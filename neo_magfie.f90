@@ -1184,8 +1184,8 @@ CONTAINS
        !PRINT *,bmod0
        boozer_curr_tor_hat = (curr_tor/bmod0)*1.0d2
        boozer_curr_pol_hat = (curr_pol/bmod0)*1.0d2
-       boozer_curr_pol_hat_s = (curr_pol_s/bmod0)*1.0d2
        boozer_curr_tor_hat_s = (curr_tor_s/bmod0)*1.0d2
+       boozer_curr_pol_hat_s = (curr_pol_s/bmod0)*1.0d2
        boozer_psi_pr_hat = (psi_pr/bmod0)*1.0d4
        boozer_sqrtg11 = (1.0d0/psi_pr)*sqrg11*1.0d-2
        boozer_isqrg = (1.0d0/psi_pr)*isqrg*1.0d-6

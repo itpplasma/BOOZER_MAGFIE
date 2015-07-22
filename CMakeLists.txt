@@ -21,7 +21,6 @@ add_executable(${PROJECT_EXE_NAME}
 add_library(boozer_magfie
 	inter_interfaces.f90
 	magfie.f90
-#	magfie_test.f90
 	neo_magfie.f90
 	neo_mod.f90
 	neo_modules.f90
@@ -38,9 +37,9 @@ add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
 
 ### Linking
 target_link_libraries(${PROJECT_EXE_NAME}
-	lapack
-	blas
 	boozer_magfie
+	openblas
+	pthread
 )
 
 ### For make install

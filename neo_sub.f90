@@ -93,6 +93,9 @@ SUBROUTINE neo_init_spline()
   USE neo_spline_data
   USE neo_input
   USE neo_exchange
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  USE neo_control, ONLY: inp_swi
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
   USE inter_interfaces, ONLY: splinecof3_hi_driv, splinecof3, tf
 !  Test
 !  USE inter_interfaces, ONLY: splinecof3_hi_driv, splinecof3, tf,      &
@@ -121,7 +124,20 @@ SUBROUTINE neo_init_spline()
   ALLOCATE ( a_lmnc(ns,mnmax), b_lmnc(ns,mnmax) )
   ALLOCATE ( c_lmnc(ns,mnmax), d_lmnc(ns,mnmax) )
   ALLOCATE ( a_bmnc(ns,mnmax), b_bmnc(ns,mnmax) ) 
-  ALLOCATE ( c_bmnc(ns,mnmax), d_bmnc(ns,mnmax) ) 
+  ALLOCATE ( c_bmnc(ns,mnmax), d_bmnc(ns,mnmax) )
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger) 
+     ALLOCATE ( a_rmns(ns,mnmax), b_rmns(ns,mnmax) )
+     ALLOCATE ( c_rmns(ns,mnmax), d_rmns(ns,mnmax) )
+     ALLOCATE ( a_zmns(ns,mnmax), b_zmns(ns,mnmax) )
+     ALLOCATE ( c_zmns(ns,mnmax), d_zmns(ns,mnmax) )
+     ALLOCATE ( a_lmns(ns,mnmax), b_lmns(ns,mnmax) )
+     ALLOCATE ( c_lmns(ns,mnmax), d_lmns(ns,mnmax) )
+     ALLOCATE ( a_bmns(ns,mnmax), b_bmns(ns,mnmax) ) 
+     ALLOCATE ( c_bmns(ns,mnmax), d_bmns(ns,mnmax) )
+  END IF
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
 
   ALLOCATE ( a_iota(ns), b_iota(ns) )
   ALLOCATE ( c_iota(ns), d_iota(ns) )
@@ -153,14 +169,35 @@ SUBROUTINE neo_init_spline()
   sp_index = (/ (i, i=1,ns) /) 
 
   ! 1-d splines of 2-d arrays
+  !PRINT *,"step 1"
   CALL splinecof3_hi_driv(es, rmnc, r_mhalf,                         &
        a_rmnc, b_rmnc, c_rmnc, d_rmnc, sp_index, tf)
+  !PRINT *,"step 2"
   CALL splinecof3_hi_driv(es, zmnc, r_mhalf,                         &
        a_zmnc, b_zmnc, c_zmnc, d_zmnc, sp_index, tf)
+  !PRINT *,"step 3"  
   CALL splinecof3_hi_driv(es, lmnc, r_mhalf,                         &
        a_lmnc, b_lmnc, c_lmnc, d_lmnc, sp_index, tf)
+  !PRINT *,"step 4"  
   CALL splinecof3_hi_driv(es, bmnc, r_mhalf,                         &
        a_bmnc, b_bmnc, c_bmnc, d_bmnc, sp_index, tf)
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger) 
+     !PRINT *,"step 5"
+     CALL splinecof3_hi_driv(es, rmns, r_mhalf,                         &
+          a_rmns, b_rmns, c_rmns, d_rmns, sp_index, tf)
+     !PRINT *,"step 6"
+     CALL splinecof3_hi_driv(es, zmns, r_mhalf,                         &
+          a_zmns, b_zmns, c_zmns, d_zmns, sp_index, tf)
+     !PRINT *,"step 7"  
+     CALL splinecof3_hi_driv(es, lmns, r_mhalf,                         &
+          a_lmns, b_lmns, c_lmns, d_lmns, sp_index, tf)
+     !PRINT *,"step 8"  
+     CALL splinecof3_hi_driv(es, bmns, r_mhalf,                         &
+          a_bmns, b_bmns, c_bmns, d_bmns, sp_index, tf)
+  END IF
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
   !
   ! Testing
   !
@@ -563,6 +600,15 @@ SUBROUTINE neo_init_fluxsurface
      s_zmnc(:)  = zmnc(psi_ind,:)
      s_lmnc(:)  = lmnc(psi_ind,:)
      s_bmnc(:)  = bmnc(psi_ind,:)
+     !! Modifications by Andreas F. Martitsch (06.08.2014)
+     ! Additional data from Boozer files without Stellarator symmetry
+     IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+        s_rmns(:)  = rmns(psi_ind,:)
+        s_zmns(:)  = zmns(psi_ind,:)
+        s_lmns(:)  = lmns(psi_ind,:)
+        s_bmns(:)  = bmns(psi_ind,:)
+     END IF
+     !! End Modifications by Andreas F. Martitsch (06.08.2014)
      s_curr_pol = curr_pol(psi_ind)
      s_curr_tor = curr_tor(psi_ind)
      s_pprime   = pprime(psi_ind)
@@ -591,6 +637,27 @@ SUBROUTINE neo_init_fluxsurface
              c_bmnc(:,i),d_bmnc(:,i),swd,m0,                       &
              s_es,tf,tfp,tfpp,tfppp,                               &
              s_bmnc(i),yp,ypp,yppp)
+        !! Modifications by Andreas F. Martitsch (06.08.2014)
+        ! Additional data from Boozer files without Stellarator symmetry
+        IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+           CALL splint_horner3(es,a_rmns(:,i),b_rmns(:,i),            &
+                c_rmns(:,i),d_rmns(:,i),swd,m0,                       &
+                s_es,tf,tfp,tfpp,tfppp,                               &
+                s_rmns(i),yp,ypp,yppp)
+           CALL splint_horner3(es,a_zmns(:,i),b_zmns(:,i),            &
+                c_zmns(:,i),d_zmns(:,i),swd,m0,                       &
+                s_es,tf,tfp,tfpp,tfppp,                               &
+                s_zmns(i),yp,ypp,yppp)
+           CALL splint_horner3(es,a_lmns(:,i),b_lmns(:,i),            &
+                c_lmns(:,i),d_lmns(:,i),swd,m0,                       &
+                s_es,tf,tfp,tfpp,tfppp,                               &
+                s_lmns(i),yp,ypp,yppp)
+           CALL splint_horner3(es,a_bmns(:,i),b_bmns(:,i),            &
+                c_bmns(:,i),d_bmns(:,i),swd,m0,                       &
+                s_es,tf,tfp,tfpp,tfppp,                               &
+                s_bmns(i),yp,ypp,yppp)
+        END IF
+        !! End Modifications by Andreas F. Martitsch (06.08.2014)
      END DO
      ! evaluation of 1-d arrays
      swd = 0
@@ -1242,7 +1309,63 @@ SUBROUTINE neo_read
            !print *, 'ixm,ixn: ',ixm(j),ixn(j)
         END DO
      END DO
+  !! Modifications by Andreas F. Martitsch (06.08.2014)   
+  ELSEIF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)        
+     READ (r_u1,*) dummy
+     READ (r_u1,*) dummy
+     READ (r_u1,*) dummy
+     READ (r_u1,*) dummy
+     READ (r_u1,*) dummy
+     READ (r_u1,*) m0b,n0b,ns,nfp,flux,r_small,r_big
+     !
+     !PRINT *,'nfp: ',nfp
+     m_max = m0b+1
+     n_max = 2*n0b+1
+     mnmax = m_max*n_max
+     ! print *, 'm_max,n_max,mnmax: ',m_max,n_max,mnmax
+     ! m = 0 , n only >= 0
+     ! mnmax = m0b * n_max + n0b + 1
 
+! **********************************************************************
+! Allocate storage arrays
+! **********************************************************************
+     ALLOCATE(ixm(mnmax), ixn(mnmax), stat = i_alloc)
+     IF(i_alloc /= 0) STOP 'Allocation for integer arrays failed!'
+
+     ALLOCATE(pixm(mnmax), pixn(mnmax), stat = i_alloc)
+     IF(i_alloc /= 0) STOP 'Allocation for integer arrays pointers failed!'
+
+     ALLOCATE(i_m(m_max), i_n(n_max), stat = i_alloc)
+     IF(i_alloc /= 0) STOP 'Allocation for integer arrays failed!'
+
+     ALLOCATE(es(ns), iota(ns), curr_pol(ns), curr_tor(ns),               & 
+          pprime(ns), sqrtg00(ns), b00(ns), stat = i_alloc)
+     IF(i_alloc /= 0) STOP 'Allocation for real arrays failed!'
+
+     ALLOCATE(rmnc(ns,mnmax), zmnc(ns,mnmax), lmnc(ns,mnmax),             &
+          bmnc(ns,mnmax), rmns(ns,mnmax), zmns(ns,mnmax), lmns(ns,mnmax), &
+          bmns(ns,mnmax), stat = i_alloc)
+     IF(i_alloc /= 0) STOP 'Allocation for fourier arrays (1) failed!'
+!***********************************************************************
+! Read input arrays
+!***********************************************************************
+     DO i =1, ns
+        READ(r_u1,*) dummy
+        READ(r_u1,*) dummy
+        READ(r_u1,*) es(i),iota(i),curr_pol(i),curr_tor(i),               &
+             pprime(i),sqrtg00(i)
+        READ(r_u1,*) dummy
+        
+        DO j=1,mnmax
+           !print *, 'j: ',j
+           READ(r_u1,*) ixm(j),ixn(j),                                    &
+                rmnc(i,j),rmns(i,j),zmnc(i,j),zmns(i,j),                  &
+                lmnc(i,j),lmns(i,j),bmnc(i,j),bmns(i,j)
+           !print *, 'ixm,ixn: ',ixm(j),ixn(j)
+           !PRINT *,'rmnc,rmns: ',rmnc(i,j),rmns(i,j)
+        END DO
+     END DO
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)   
   ELSE
      WRITE (w_us,*) 'FATAL: There is yet no other input type defined'
      STOP
@@ -1330,8 +1453,9 @@ SUBROUTINE neo_read
      ixm =  - ixm ! change m to -m (rhs coord. syst)
      i_m =  - i_m
   ELSE IF  (lab_swi .EQ. 4) THEN         ! W7X file
+     ! signs / conversion checked by Winny (24.10.2014)
      curr_pol = - curr_pol * 2.d-7 * nfp   ! ? -
-     curr_tor = curr_tor * 2.d-7 
+     curr_tor = - curr_tor * 2.d-7 
      max_n_mode = max_n_mode * nfp
      ixn =  ixn * nfp
      i_n =  i_n * nfp
@@ -1348,8 +1472,9 @@ SUBROUTINE neo_read
      curr_pol = curr_pol
      iota     = iota
   ELSE IF  (lab_swi .EQ. 6) THEN         ! NEW IPP, HSX
+     ! signs / conversion checked by Winny (24.10.2014)
      curr_pol = - curr_pol * 2.d-7 * nfp   ! ? -
-     curr_tor = curr_tor * 2.d-7 * nfp ! Henning  
+     curr_tor = - curr_tor * 2.d-7 ! Henning  
      max_n_mode = max_n_mode * nfp
      ixn =  ixn * nfp
      i_n =  i_n * nfp
@@ -1364,14 +1489,27 @@ SUBROUTINE neo_read
      END DO
      psi_pr = ABS(flux) / twopi * nfp
   ELSE IF  (lab_swi .EQ. 8) THEN         ! NEW IPP TOKAMAKK
+     ! signs / conversion checked by Winny (24.10.2014)   
      curr_pol = - curr_pol * 2.d-7 * nfp   ! ? -
-     curr_tor = curr_tor * 2.d-7 * nfp ! Henning  
+     curr_tor = - curr_tor * 2.d-7 ! Henning  
      max_n_mode = max_n_mode * nfp
      ixn =  ixn * nfp
      i_n =  i_n * nfp
      ixm =  ixm 
      i_m =  i_m
      psi_pr = ABS(flux) / twopi
+  !! Modifications by Andreas F. Martitsch (27.08.2014)
+  ELSE IF  (lab_swi .EQ. 9) THEN         ! ASDEX-U (E. Strumberger)
+     ! signs / conversion checked by Winny (24.10.2014)
+     curr_pol = curr_pol * 2.d-7 * nfp   
+     curr_tor = curr_tor * 2.d-7
+     max_n_mode = max_n_mode * nfp
+     ixn =  ixn * nfp
+     i_n =  i_n * nfp
+     ixm =  ixm 
+     i_m =  i_m
+     psi_pr = ABS(flux) / twopi
+  !! End Modifications by Andreas F. Martitsch (27.08.2014) 
   ELSE
      WRITE(w_us,*) 'FATAL: There is yet no other Laboratory defined!'
      STOP
@@ -1630,6 +1768,17 @@ SUBROUTINE neo_prep
            s_bmnc(mnmax),                                              &
           stat = i_alloc)
   IF(i_alloc /= 0) STOP 'Allocation for spectra on flux surfaces!'
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+     ALLOCATE(s_rmns(mnmax),                                          &
+          s_zmns(mnmax),                                              &
+          s_lmns(mnmax),                                              &
+          s_bmns(mnmax),                                              &
+          stat = i_alloc)
+     IF(i_alloc /= 0) STOP 'Allocation for asymmetric spectra on flux surfaces!'
+  END IF
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
 ! **********************************************************************
 ! Some initial work
 ! **********************************************************************
@@ -1727,6 +1876,10 @@ SUBROUTINE neo_fourier
   INTEGER       :: it, ip, imn
   INTEGER       :: uw = 100
   REAL(kind=dp) :: ri, zi, li, bi
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  REAL(kind=dp) :: ri_s, zi_s, li_s, bi_s
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
   REAL(kind=dp) :: cosv, sinv
   REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: hh1, hh2
   REAL(kind=dp), DIMENSION(:,:), ALLOCATABLE :: sqrga,sqrgb
@@ -1791,6 +1944,15 @@ SUBROUTINE neo_fourier
      zi = s_zmnc(imn)
      li = s_lmnc(imn)
      bi = s_bmnc(imn)
+     !! Modifications by Andreas F. Martitsch (06.08.2014)
+     ! Additional data from Boozer files without Stellarator symmetry
+     IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+        ri_s = s_rmns(imn)
+        zi_s = s_zmns(imn)
+        li_s = s_lmns(imn)
+        bi_s = s_bmns(imn)
+     END IF
+     !! End Modifications by Andreas F. Martitsch (06.08.2014)
      m = ixm(imn)
      n = ixn(imn)
      im = pixm(imn)
@@ -1801,22 +1963,44 @@ SUBROUTINE neo_fourier
            DO it=1,theta_n
 !             cosv = cosval(ip,it,imn)
 !             sinv = sinval(ip,it,imn)
-              cosv = cosmth(it,im) * cosnph(ip,in) + sinmth(it,im) * sinnph(ip,in)
-              sinv = sinmth(it,im) * cosnph(ip,in) - cosmth(it,im) * sinnph(ip,in)
+              !! Modifications by Andreas F. Martitsch (06.08.2014)
+              ! Additional data from Boozer files without Stellarator symmetry
+              IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+                 cosv = cosmth(it,im) * cosnph(ip,in) - sinmth(it,im) * sinnph(ip,in)
+                 sinv = sinmth(it,im) * cosnph(ip,in) + cosmth(it,im) * sinnph(ip,in)
 
-              r(it,ip) = r(it,ip) + ri*cosv
-              z(it,ip) = z(it,ip) + zi*sinv
-              l(it,ip) = l(it,ip) + li*sinv
-              b(it,ip) = b(it,ip) + bi*cosv
+                 r(it,ip) = r(it,ip) + ri*cosv + ri_s*sinv
+                 z(it,ip) = z(it,ip) + zi*cosv + zi_s*sinv
+                 l(it,ip) = l(it,ip) + li*cosv + li_s*sinv
+                 b(it,ip) = b(it,ip) + bi*cosv + bi_s*sinv
 
-              r_tb(it,ip) = r_tb(it,ip) - m*ri*sinv
-              r_pb(it,ip) = r_pb(it,ip) + n*ri*sinv
-              z_tb(it,ip) = z_tb(it,ip) + m*zi*cosv
-              z_pb(it,ip) = z_pb(it,ip) - n*zi*cosv
-              p_tb(it,ip) = p_tb(it,ip) - m*li*cosv ! -l_tb
-              p_pb(it,ip) = p_pb(it,ip) + n*li*cosv ! -l_pb
-              b_tb(it,ip) = b_tb(it,ip) - m*bi*sinv
-              b_pb(it,ip) = b_pb(it,ip) + n*bi*sinv
+                 r_tb(it,ip) = r_tb(it,ip) - m*ri*sinv + m*ri_s*cosv
+                 r_pb(it,ip) = r_pb(it,ip) - n*ri*sinv + n*ri_s*cosv
+                 z_tb(it,ip) = z_tb(it,ip) - m*zi*sinv + m*zi_s*cosv
+                 z_pb(it,ip) = z_pb(it,ip) - n*zi*sinv + n*zi_s*cosv
+                 p_tb(it,ip) = p_tb(it,ip) + m*li*sinv - m*li_s*cosv ! -l_tb
+                 p_pb(it,ip) = p_pb(it,ip) + n*li*sinv - n*li_s*cosv ! -l_pb
+                 b_tb(it,ip) = b_tb(it,ip) - m*bi*sinv + m*bi_s*cosv
+                 b_pb(it,ip) = b_pb(it,ip) - n*bi*sinv + n*bi_s*cosv                
+              ELSE
+                 cosv = cosmth(it,im) * cosnph(ip,in) + sinmth(it,im) * sinnph(ip,in)
+                 sinv = sinmth(it,im) * cosnph(ip,in) - cosmth(it,im) * sinnph(ip,in)
+
+                 r(it,ip) = r(it,ip) + ri*cosv
+                 z(it,ip) = z(it,ip) + zi*sinv
+                 l(it,ip) = l(it,ip) + li*sinv
+                 b(it,ip) = b(it,ip) + bi*cosv
+
+                 r_tb(it,ip) = r_tb(it,ip) - m*ri*sinv
+                 r_pb(it,ip) = r_pb(it,ip) + n*ri*sinv
+                 z_tb(it,ip) = z_tb(it,ip) + m*zi*cosv
+                 z_pb(it,ip) = z_pb(it,ip) - n*zi*cosv
+                 p_tb(it,ip) = p_tb(it,ip) - m*li*cosv ! -l_tb
+                 p_pb(it,ip) = p_pb(it,ip) + n*li*cosv ! -l_pb
+                 b_tb(it,ip) = b_tb(it,ip) - m*bi*sinv
+                 b_pb(it,ip) = b_pb(it,ip) + n*bi*sinv
+              END IF
+              !! End Modifications by Andreas F. Martitsch (06.08.2014)
            END DO
         END DO
      END IF
@@ -2132,6 +2316,10 @@ SUBROUTINE neo_eval(theta,phi,bval,gval,kval,pval,qval,rval)
   INTEGER       :: i_alloc
   INTEGER       :: imn, m, n, im, in
   REAL(kind=dp) :: ri, zi, li, bi
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  REAL(kind=dp) :: ri_s, zi_s, li_s, bi_s
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
   REAL(kind=dp), DIMENSION(:), ALLOCATABLE :: cosval,sinval
   REAL(kind=dp) :: cosv, sinv
   REAL(kind=dp) :: rr, zz, ll, bb
@@ -2185,8 +2373,16 @@ SUBROUTINE neo_eval(theta,phi,bval,gval,kval,pval,qval,rval)
 ! **********************************************************************
   ELSEIF (eval_mode .EQ. 1) THEN
 
-     sinval = SIN(ixm*theta - ixn*phi)
-     cosval = COS(ixm*theta - ixn*phi)
+     !! Modifications by Andreas F. Martitsch (06.08.2014)
+     ! Additional data from Boozer files without Stellarator symmetry
+     IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+        sinval = SIN(ixm*theta + ixn*phi)
+        cosval = COS(ixm*theta + ixn*phi)
+     ELSE
+        sinval = SIN(ixm*theta - ixn*phi)
+        cosval = COS(ixm*theta - ixn*phi)
+     END IF
+     !! End Modifications by Andreas F. Martitsch (06.08.2014)
 
 !***********************************************************************
 ! Summation of Fourier components
@@ -2210,6 +2406,15 @@ SUBROUTINE neo_eval(theta,phi,bval,gval,kval,pval,qval,rval)
         zi = s_zmnc(imn)
         li = s_lmnc(imn)
         bi = s_bmnc(imn)
+        !! Modifications by Andreas F. Martitsch (06.08.2014)
+        ! Additional data from Boozer files without Stellarator symmetry
+        IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+           ri_s = s_rmns(imn)
+           zi_s = s_zmns(imn)
+           li_s = s_lmns(imn)
+           bi_s = s_bmns(imn)
+        END IF
+        !! End Modifications by Andreas F. Martitsch (06.08.2014)
         m = ixm(imn)
         n = ixn(imn)
         im = pixm(imn)
@@ -2218,20 +2423,38 @@ SUBROUTINE neo_eval(theta,phi,bval,gval,kval,pval,qval,rval)
         IF (ABS(m) .LE. max_m_mode .AND. ABS(n) .LE. max_n_mode) THEN
            cosv = cosval(imn)
            sinv = sinval(imn)
+           !! Modifications by Andreas F. Martitsch (06.08.2014)
+           ! Additional data from Boozer files without Stellarator symmetry
+           IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+              rr = rr + ri*cosv + ri_s*sinv
+              zz = zz + zi*cosv + zi_s*sinv
+              ll = ll + li*cosv + li_s*sinv
+              bb = bb + bi*cosv + bi_s*sinv
 
-           rr = rr + ri*cosv
-           zz = zz + zi*sinv
-           ll = ll + li*sinv
-           bb = bb + bi*cosv
+              rr_tb = rr_tb - m*ri*sinv + m*ri_s*cosv
+              rr_pb = rr_pb - n*ri*sinv + n*ri_s*cosv
+              zz_tb = zz_tb - m*zi*sinv + m*zi_s*cosv
+              zz_pb = zz_pb - n*zi*sinv + n*zi_s*cosv
+              pp_tb = pp_tb + m*li*sinv - m*li_s*cosv ! -l_tb
+              pp_pb = pp_pb + n*li*sinv - n*li_s*cosv ! -l_pb
+              bb_tb = bb_tb - m*bi*sinv + m*bi_s*cosv
+              bb_pb = bb_pb - n*bi*sinv + n*bi_s*cosv                
+           ELSE
+              rr = rr + ri*cosv
+              zz = zz + zi*sinv
+              ll = ll + li*sinv
+              bb = bb + bi*cosv
 
-           rr_tb = rr_tb - m*ri*sinv
-           rr_pb = rr_pb + n*ri*sinv
-           zz_tb = zz_tb + m*zi*cosv
-           zz_pb = zz_pb - n*zi*cosv
-           pp_tb = pp_tb - m*li*cosv
-           pp_pb = pp_pb + n*li*cosv
-           bb_tb = bb_tb - m*bi*sinv
-           bb_pb = bb_pb + n*bi*sinv
+              rr_tb = rr_tb - m*ri*sinv
+              rr_pb = rr_pb + n*ri*sinv
+              zz_tb = zz_tb + m*zi*cosv
+              zz_pb = zz_pb - n*zi*cosv
+              pp_tb = pp_tb - m*li*cosv
+              pp_pb = pp_pb + n*li*cosv
+              bb_tb = bb_tb - m*bi*sinv
+              bb_pb = bb_pb + n*bi*sinv
+           END IF
+           !! End Modifications by Andreas F. Martitsch (06.08.2014)
         END IF
      END DO
      pp_tb = pp_tb * twopi / nfp
@@ -2373,12 +2596,27 @@ SUBROUTINE neo_dealloc
   DEALLOCATE (fluxs_arr)
   DEALLOCATE (li_minima)
   DEALLOCATE (s_rmnc, s_zmnc, s_lmnc, s_bmnc)
+  !! Modifications by Andreas F. Martitsch (06.08.2014)
+  ! Additional data from Boozer files without Stellarator symmetry
+  IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+     DEALLOCATE (s_rmns, s_zmns, s_lmns, s_bmns)
+  END IF
+  !! End Modifications by Andreas F. Martitsch (06.08.2014)
 
   IF (fluxs_interp .NE. 0) THEN
      DEALLOCATE ( a_rmnc, b_rmnc, c_rmnc, d_rmnc )
      DEALLOCATE ( a_zmnc, b_zmnc, c_zmnc, d_zmnc )
      DEALLOCATE ( a_lmnc, b_lmnc, c_lmnc, d_lmnc )
-     DEALLOCATE ( a_bmnc, b_bmnc, c_bmnc, d_bmnc ) 
+     DEALLOCATE ( a_bmnc, b_bmnc, c_bmnc, d_bmnc )
+     !! Modifications by Andreas F. Martitsch (06.08.2014)
+     ! Additional data from Boozer files without Stellarator symmetry
+     IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+        DEALLOCATE ( a_rmns, b_rmns, c_rmns, d_rmns )
+        DEALLOCATE ( a_zmns, b_zmns, c_zmns, d_zmns )
+        DEALLOCATE ( a_lmns, b_lmns, c_lmns, d_lmns )
+        DEALLOCATE ( a_bmns, b_bmns, c_bmns, d_bmns )
+     END IF
+     !! End Modifications by Andreas F. Martitsch (06.08.2014)
      
      DEALLOCATE ( a_iota, b_iota )
      DEALLOCATE ( c_iota, d_iota )
