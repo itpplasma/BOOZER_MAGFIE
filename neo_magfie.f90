@@ -7,7 +7,8 @@ MODULE neo_magfie_mod
        ONLY: fluxs_interp, write_progress, phi_n, theta_n, lab_swi,    &
        inp_swi
   USE neo_sub_mod,                                                     &
-       ONLY: neo_read_control, neo_init, neo_init_spline
+       ONLY: neo_read_control, neo_init, neo_init_spline,              &
+       neo_eval, neo_zeros2d
   USE neo_spline_data,                                                 &
        ONLY: r_mhalf,                                                  &
        a_bmnc, b_bmnc, c_bmnc, d_bmnc,                                 &
@@ -29,9 +30,14 @@ MODULE neo_magfie_mod
        tfone, tfzero
   USE neo_work,                                                        &
        ONLY: cosmth, cosnph, sinmth, sinnph, theta_int, phi_int,       &
-       theta_start, theta_end, phi_start, phi_end
+       theta_start, theta_end, phi_start, phi_end,                     &
+       phi_arr,theta_arr
   USE neo_actual_fluxs, ONLY : s_sqrtg00
   USE spline_mod, ONLY: spl2d, poi2d, eva2d
+  USE neo_exchange, ONLY: nper,b_min,b_max, &
+       theta_bmin,theta_bmax,phi_bmin,phi_bmax
+  !USE neo_eval_switch, ONLY: eval_switch
+
   !! Modifications by Andreas F. Martitsch (12.03.2014)
   ! Use this quantity for normalization. Note:
   ! Variable is computed in mag_interface.f90 ("boozer_bmod0").
@@ -41,7 +47,7 @@ MODULE neo_magfie_mod
   ! not used for the computation of physical quantities.
   USE partpa_mod,  ONLY : bmod0
   !! End Modifications by Andreas F. Martitsch (12.03.2014)  
-  
+
   !---------------------------------------------------------------------------
   !USE var_sub_misc, ONLY: fac_c,iota_m ! fac_m
   !---------------------------------------------------------------------------
@@ -91,7 +97,7 @@ MODULE neo_magfie_mod
   REAL(dp), DIMENSION(:,:,:,:,:), ALLOCATABLE, TARGET      :: R_spl
   REAL(dp), DIMENSION(:,:,:,:,:), ALLOCATABLE, TARGET      :: Z_spl
   !! End Modifications by Andreas F. Martitsch (13.11.2014)
-  
+
   REAL(dp) :: boozer_iota
   REAL(dp) :: boozer_iota_s
   REAL(dp) :: boozer_sqrtg00
@@ -113,9 +119,10 @@ MODULE neo_magfie_mod
   REAL(dp) :: boozer_sqrtg11 ! Test
   REAL(dp) :: boozer_isqrg
   !! End Modifications by Andreas F. Martitsch (12.03.2014)
-  
+ 
+  REAL(dp) :: s_used_for_spline = -1.0d0
   REAL(dp), PRIVATE :: av_b2_m ! Klaus
-  
+
   !! Modifications by Andreas F. Martitsch (11.03.2014)
   ! Transfer the computed values of the additionally needed 
   ! B-field components between neo_magfie_a and neo_magfie_b
@@ -129,7 +136,7 @@ MODULE neo_magfie_mod
   ! Local variables for the additionally needed quantities for NTV output
   REAL(dp), PRIVATE :: r_val, z_val    
   !! End Modifications by Andreas F. Martitsch (13.11.2014)
-  
+
   INTERFACE neo_magfie
      MODULE PROCEDURE neo_magfie_a, neo_magfie_b, neo_magfie_c
   END INTERFACE
@@ -138,13 +145,13 @@ CONTAINS
 
   SUBROUTINE neo_magfie_a( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl )
     ! input / output
-    REAL(dp), DIMENSION(:),       INTENT(in)            :: x
-    REAL(dp),                     INTENT(out)           :: bmod
-    REAL(dp),                     INTENT(out)           :: sqrtg
-    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)           :: bder
-    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)           :: hcovar
-    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)           :: hctrvr
-    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)           :: hcurl
+    REAL(dp), DIMENSION(:),       INTENT(in)         :: x
+    REAL(dp),                     INTENT(out)        :: bmod
+    REAL(dp),                     INTENT(out)        :: sqrtg
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: bder
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hcovar
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hctrvr
+    REAL(dp), DIMENSION(SIZE(x)), INTENT(out)        :: hcurl
     ! local definitions
     !! Modifications by Andreas F. Martitsch (11.03.2014)
     ! Locally computed values of the additionally needed 
@@ -188,7 +195,7 @@ CONTAINS
     REAL(dp)                                         :: ris_s, zis_s, lis_s
     !! End Modifications by Andreas F. Martitsch (07.03.2014)
     REAL(dp)                                         :: theta_d, phi_d
-    
+
     REAL(dp), DIMENSION(:), ALLOCATABLE              :: s_bmnc, s_bmnc_s
     REAL(dp), DIMENSION(:), ALLOCATABLE              :: s_rmnc, s_zmnc, s_lmnc
     !! Modifications by Andreas F. Martitsch (06.03.2014)
@@ -229,6 +236,23 @@ CONTAINS
     
     REAL(dp) :: isqrg, sqrg11
 
+    INTEGER,       DIMENSION(2)                   :: b_minpos, b_maxpos
+    ! This does not work
+    !REAL(kind=dp), PARAMETER                      :: eps_newt = 1.0d-10
+    !INTEGER                                       :: iter, error
+    !INTEGER,       PARAMETER                      :: iterma_newt = 100
+    !REAL(kind=dp)                                 :: gval_bmin
+    !REAL(kind=dp)                                 :: kval_bmin,pval_bmin
+    !REAL(kind=dp)                                 :: gval_bmax
+    !REAL(kind=dp)                                 :: kval_bmax,pval_bmax
+    !REAL(kind=dp)                                 :: qval_bmin,qval_bmax
+    !REAL(kind=dp)                                 :: rval_bmin,rval_bmax
+
+
+
+
+
+
     !REAL(dp) :: s_sqrtg00_m Klaus
     
     !*******************************************************************
@@ -242,6 +266,23 @@ CONTAINS
        !PRINT *, theta_start,theta_end,phi_start,phi_end
     END IF
     !*******************************************************************
+    ! Detect a new s, so that splines on the surface a updated
+    !*******************************************************************
+    if (magfie_spline .EQ. 1 .AND. magfie_newspline .EQ. 0 .and. &
+         SIZE(magfie_sarray) .eq. 1) THEN
+       ! Here in principle no new spline on the surface has to be done
+       ! There is now a new feature, that a new value of s is detected 
+       ! and therefore a spline on the surface is done
+       !if (x(1) .ne. s_used_for_spline) then
+       if ( ABS(x(1)-s_used_for_spline) .GT. magfie_epsi ) then
+          magfie_newspline = 1
+          magfie_sarray(1) = x(1)
+          s_used_for_spline = x(1)
+       end if
+    else
+       s_used_for_spline = magfie_sarray(1)
+    end if
+    !*******************************************************************
     ! Spline of surfaces in magfie_sarray
     !*******************************************************************
     IF (magfie_spline .EQ. 1 .AND. magfie_newspline .EQ. 1) THEN
@@ -249,36 +290,57 @@ CONTAINS
        !****************************************************************
        ! Allocation
        !****************************************************************
+       if (allocated(bmod_spl)) deallocate(bmod_spl)
        ALLOCATE( bmod_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(bb_s_spl)) deallocate(bb_s_spl)
        ALLOCATE( bb_s_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(bb_tb_spl)) deallocate(bb_tb_spl)
        ALLOCATE( bb_tb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(bb_pb_spl)) deallocate(bb_pb_spl)
        ALLOCATE( bb_pb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(gval_spl)) deallocate(gval_spl)
        ALLOCATE( gval_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
        !! Modifications by Andreas F. Martitsch (11.03.2014)
        ! Allocate the storage arrays for the 2d spline interpolation
        ! (over the flux-surface) of the additionally needed metric
        ! tensor elements 
+       if (allocated(gstb_spl)) deallocate(gstb_spl)
        ALLOCATE( gstb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(gspb_spl)) deallocate(gspb_spl)
        ALLOCATE( gspb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(gstb_tb_spl)) deallocate(gstb_tb_spl)
        ALLOCATE( gstb_tb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(gspb_tb_spl)) deallocate(gspb_tb_spl)
        ALLOCATE( gspb_tb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(gstb_pb_spl)) deallocate(gstb_pb_spl)
        ALLOCATE( gstb_pb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(gspb_pb_spl)) deallocate(gspb_pb_spl)
        ALLOCATE( gspb_pb_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
        !! End Modifications by Andreas F. Martitsch (11.03.2014)
        !! Modifications by Andreas F. Martitsch (13.11.2014)
        ! Allocate storage arrays for the 2d periodic splines
        ! of the additionally needed quantities for NTV output
+       if (allocated(R_spl)) deallocate(R_spl)
        ALLOCATE( R_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
+       if (allocated(Z_spl)) deallocate(Z_spl)
        ALLOCATE( Z_spl(4,4,theta_n,phi_n,magfie_sarray_len) )
        !! End Modifications by Andreas F. Martitsch (13.11.2014)
-       
+
+       if (allocated(curr_tor_array)) deallocate(curr_tor_array)
        ALLOCATE( curr_tor_array(magfie_sarray_len) )
+       if (allocated(curr_tor_s_array)) deallocate(curr_tor_s_array)
        ALLOCATE( curr_tor_s_array(magfie_sarray_len) )
+       if (allocated(curr_pol_array)) deallocate(curr_pol_array)
        ALLOCATE( curr_pol_array(magfie_sarray_len) )
+       if (allocated(curr_pol_s_array)) deallocate(curr_pol_s_array)
        ALLOCATE( curr_pol_s_array(magfie_sarray_len) )
+       if (allocated(iota_array)) deallocate(iota_array)
        ALLOCATE( iota_array(magfie_sarray_len) )
+       if (allocated(iota_s_array)) deallocate(iota_s_array)
        ALLOCATE( iota_s_array(magfie_sarray_len) )
+       if (allocated(pprime_array)) deallocate(pprime_array)
        ALLOCATE( pprime_array(magfie_sarray_len) )
+       if (allocated(sqrtg00_array)) deallocate(sqrtg00_array)
        ALLOCATE( sqrtg00_array(magfie_sarray_len) )
        !****************************************************************
        ! Loop over predefined s-values 
@@ -289,31 +351,47 @@ CONTAINS
           ! Surface
           !*************************************************************
           IF (write_progress .EQ. 1) THEN
-             PRINT *, 'Initialize Surface, k_es = ',k_es
+             PRINT *, 'Initialize Surface, k_es = ',k_es,' with s = ',s
           END IF
+          if (allocated(s_bmnc)) deallocate(s_bmnc)
           ALLOCATE ( s_bmnc(mnmax) )
+          if (allocated(s_bmnc_s)) deallocate(s_bmnc_s)
           ALLOCATE ( s_bmnc_s(mnmax) )
+          if (allocated(s_rmnc)) deallocate(s_bmnc)
           ALLOCATE ( s_rmnc(mnmax) )
+          if (allocated(s_zmnc)) deallocate(s_bmnc)
           ALLOCATE ( s_zmnc(mnmax) )
+          if (allocated(s_lmnc)) deallocate(s_bmnc)
           ALLOCATE ( s_lmnc(mnmax) )
           !! Modifications by Andreas F. Martitsch (06.03.2014)
           ! Compute the necessary radial derivatives for the 
           ! (R,Z,phi)-components obtained from the 1d spline
+          if (allocated(s_rmnc_s)) deallocate(s_rmnc_s)
           ALLOCATE ( s_rmnc_s(mnmax) ) ! Allocate arrays for additional
+          if (allocated(s_zmnc_s)) deallocate(s_zmnc_s)
           ALLOCATE ( s_zmnc_s(mnmax) ) ! radial derivatives
+          if (allocated(s_lmnc_s)) deallocate(s_lmnc_s)
           ALLOCATE ( s_lmnc_s(mnmax) )
           !! End Modifications by Andreas F. Martitsch (06.03.2014)
           !
           !! Modifications by Andreas F. Martitsch (06.08.2014)
           ! Additional data from Boozer files without Stellarator symmetry
           IF (inp_swi .EQ. 9) THEN        ! ASDEX-U (E. Strumberger)
+             if (allocated(s_bmns)) deallocate(s_bmns)
              ALLOCATE ( s_bmns(mnmax) )
+             if (allocated(s_bmns_s)) deallocate(s_bmns_s)
              ALLOCATE ( s_bmns_s(mnmax) )
+             if (allocated(s_rmns)) deallocate(s_rmns)
              ALLOCATE ( s_rmns(mnmax) )
+             if (allocated(s_zmns)) deallocate(s_zmns)
              ALLOCATE ( s_zmns(mnmax) )
+             if (allocated(s_lmns)) deallocate(s_lmns)
              ALLOCATE ( s_lmns(mnmax) )
+             if (allocated(s_rmns_s)) deallocate(s_rmns_s)
              ALLOCATE ( s_rmns_s(mnmax) )
+             if (allocated(s_zmns_s)) deallocate(s_zmns_s)
              ALLOCATE ( s_zmns_s(mnmax) )
+             if (allocated(s_lmns_s)) deallocate(s_lmns_s)
              ALLOCATE ( s_lmns_s(mnmax) )             
           END IF
           !! End Modifications by Andreas F. Martitsch (06.08.2014)
@@ -392,23 +470,36 @@ CONTAINS
           IF (write_progress .EQ. 1) THEN
              PRINT *, 'Do Fourier'
           END IF
+          if (allocated(bmod_a)) deallocate(bmod_a)
           ALLOCATE( bmod_a(theta_n,phi_n) ) 
+          if (allocated(bb_s_a)) deallocate(bb_s_a)
           ALLOCATE( bb_s_a(theta_n,phi_n) ) 
+          if (allocated(bb_tb_a)) deallocate(bb_tb_a)
           ALLOCATE( bb_tb_a(theta_n,phi_n) ) 
+          if (allocated(bb_pb_a)) deallocate(bb_pb_a)
           ALLOCATE( bb_pb_a(theta_n,phi_n) )
           bmod_a  = 0.0_dp
           bb_s_a  = 0.0_dp
           bb_tb_a = 0.0_dp
           bb_pb_a = 0.0_dp
 
+          if (allocated(r)) deallocate(r)
           ALLOCATE( r(theta_n,phi_n) )  ! NEW
+          if (allocated(z)) deallocate(z)
           ALLOCATE( z(theta_n,phi_n) ) 
+          if (allocated(l)) deallocate(l)
           ALLOCATE( l(theta_n,phi_n) ) 
+          if (allocated(r_tb)) deallocate(r_tb)
           ALLOCATE( r_tb(theta_n,phi_n) ) 
+          if (allocated(z_tb)) deallocate(z_tb)
           ALLOCATE( z_tb(theta_n,phi_n) ) 
+          if (allocated(p_tb)) deallocate(p_tb)
           ALLOCATE( p_tb(theta_n,phi_n) ) 
+          if (allocated(r_pb)) deallocate(r_pb)
           ALLOCATE( r_pb(theta_n,phi_n) ) 
+          if (allocated(z_pb)) deallocate(z_pb)
           ALLOCATE( z_pb(theta_n,phi_n) ) 
+          if (allocated(p_pb)) deallocate(p_pb)
           ALLOCATE( p_pb(theta_n,phi_n) ) 
           r = 0.0d0
           z = 0.0d0
@@ -422,6 +513,25 @@ CONTAINS
           !! Modifications by Andreas F. Martitsch (11.03.2014)
           ! Allocate temporary storage arrays for the Fourier summations
           ! related to the radial derivatives of (R,Z,phi)-components
+          if (allocated(r_s)) deallocate(r_s)
+          if (allocated(z_s)) deallocate(z_s)
+          if (allocated(p_s)) deallocate(p_s)
+          if (allocated(r_stb)) deallocate(r_stb)
+          if (allocated(z_stb)) deallocate(z_stb)
+          if (allocated(p_stb)) deallocate(p_stb)
+          if (allocated(r_tbtb)) deallocate(r_tbtb)
+          if (allocated(z_tbtb)) deallocate(z_tbtb)
+          if (allocated(p_tbtb)) deallocate(p_tbtb)
+          if (allocated(r_pbtb)) deallocate(r_pbtb)
+          if (allocated(p_pbtb)) deallocate(p_pbtb)
+          if (allocated(z_pbtb)) deallocate(z_pbtb)
+          if (allocated(r_spb)) deallocate(r_spb)
+          if (allocated(z_spb)) deallocate(z_spb)
+          if (allocated(p_spb)) deallocate(p_spb)
+          if (allocated(r_pbpb)) deallocate(r_pbpb)
+          if (allocated(z_pbpb)) deallocate(z_pbpb)
+          if (allocated(p_pbpb)) deallocate(p_pbpb)
+          
           ALLOCATE( r_s(theta_n,phi_n) )
           ALLOCATE( z_s(theta_n,phi_n) )
           ALLOCATE( p_s(theta_n,phi_n) )
@@ -712,13 +822,23 @@ CONTAINS
           ! **********************************************************************
           ! Derived quantities
           ! **********************************************************************
+          if (allocated(gtbtb)) deallocate(gtbtb)
           ALLOCATE( gtbtb(theta_n,phi_n) ) 
+          if (allocated(gpbpb)) deallocate(gpbpb)
           ALLOCATE( gpbpb(theta_n,phi_n) ) 
+          if (allocated(gtbpb)) deallocate(gtbpb)
           ALLOCATE( gtbpb(theta_n,phi_n) ) 
+          if (allocated(sqrg11_met)) deallocate(sqrg11_met)
           ALLOCATE( sqrg11_met(theta_n,phi_n) )
           !! Modifications by Andreas F. Martitsch (11.03.2014)
           ! Allocate temporary storage arrays for the Fourier summations
           ! related to the additionally needed metric tensor elements
+          if (allocated(gstb_a)) deallocate(gstb_a)
+          if (allocated(gspb_a)) deallocate(gspb_a)
+          if (allocated(gstb_tb_a)) deallocate(gstb_tb_a)
+          if (allocated(gspb_tb_a)) deallocate(gspb_tb_a)
+          if (allocated(gstb_pb_a)) deallocate(gstb_pb_a)
+          if (allocated(gspb_pb_a)) deallocate(gspb_pb_a)
           ALLOCATE( gstb_a(theta_n,phi_n) )
           ALLOCATE( gspb_a(theta_n,phi_n) )
           ALLOCATE( gstb_tb_a(theta_n,phi_n) )
@@ -834,13 +954,13 @@ CONTAINS
           CALL spl2d(theta_n,phi_n,theta_int,phi_int,mt,mp,            &
                z,p_spl)
           !! End Modifications by Andreas F. Martitsch (13.11.2014)
-          
+
           !PRINT *, 'max_g11 = ', maxval(sqrg11_met)
           !PRINT *, 'min_g11 = ', minval(sqrg11_met)
 
           !stop "Compute magnetic field components via a spline (and not via direct Fourier summation)"
 
-          DEALLOCATE( bmod_a )
+          !DEALLOCATE( bmod_a )
           DEALLOCATE( bb_s_a )
           DEALLOCATE( bb_tb_a )
           DEALLOCATE( bb_pb_a )
@@ -922,6 +1042,49 @@ CONTAINS
                s, tfone, tfzero, tfzero, tfzero,                       &
                sqrtg00_array(k_es), yp, ypp, yppp)
        END DO
+
+       ! Minimum and Maximum in the new mode
+       if (magfie_sarray_len .eq. 1) then
+          ! **********************************************************************
+          ! Calculate absolute minimum and maximum of b and its location (theta, phi)
+          ! **********************************************************************
+          !print *, 'I am in Minimum'
+          b_minpos   = MINLOC(bmod_a)
+          !print *, 'b_minpos ',b_minpos
+          b_min      = bmod_a(b_minpos(1),b_minpos(2))
+          !print *, 'b_min ',b_min
+          theta_bmin = theta_arr(b_minpos(1))
+          !print *, 'theta_bmin ',theta_bmin
+          phi_bmin   = phi_arr(b_minpos(2))
+          !print *, 'phi_bmin ',phi_bmin
+          
+          b_maxpos   = MAXLOC(bmod_a)
+          b_max      = bmod_a(b_maxpos(1),b_maxpos(2))
+          theta_bmax = theta_arr(b_maxpos(1))
+          phi_bmax   = phi_arr(b_maxpos(2))
+
+          ! more exact evaluation of the minimum and maximum
+          ! This can not work like this
+          ! because the spline arrays are not the same
+          ! 
+          ! IF (write_progress .NE. 0) WRITE (w_us,*) 'before neo_zeros2d (min)'
+          !eval_switch = (/1,0,0,0,0,0/)
+          !CALL neo_zeros2d(theta_bmin, phi_bmin, eps_newt, iterma_newt, iter, error)
+          !eval_switch = (/1,1,1,1,1,1/)
+          !CALL neo_eval(theta_bmin,phi_bmin,b_min,gval_bmin,kval_bmin,&
+          !     pval_bmin,qval_bmin,rval_bmin)
+          ! IF (write_progress .NE. 0) WRITE (w_us,*) 'after  neo_zeros2d'
+
+          ! IF (write_progress .NE. 0) WRITE (w_us,*) 'before neo_zeros2d (max)'
+          !eval_switch = (/1,0,0,0,0,0/)
+          !CALL neo_zeros2d(theta_bmax, phi_bmax, eps_newt, iterma_newt, iter, error)
+          !eval_switch = (/1,1,1,1,1,1/)
+          !CALL neo_eval(theta_bmax,phi_bmax,b_max,gval_bmax,kval_bmax,&
+          !     pval_bmax,qval_bmax,rval_bmax)
+          ! IF (write_progress .NE. 0) WRITE (w_us,*) 'after  neo_zeros2d'
+          !eval_switch = (/1,0,0,0,0,0/)
+       end if
+       DEALLOCATE( bmod_a )
        magfie_newspline = 0
     END IF
 
@@ -932,6 +1095,7 @@ CONTAINS
        ! Detection of index
        !****************************************************************
        DO k_es = 1, magfie_sarray_len
+          !print *, k_es, magfie_sarray_len, s, magfie_sarray(k_es), magfie_epsi
           IF ( ABS(s-magfie_sarray(k_es)) .LT. magfie_epsi) THEN
              s_detected = 1
              EXIT
@@ -1155,7 +1319,7 @@ CONTAINS
        bder(3) = bb_tb
        bder(2) = bb_pb
        bder=bder / bmod                                          !!!
-       
+
        !! Modifications by Andreas F. Martitsch (07.03.2014)
        ! Radial covariant B-field component is now available
        hcovar(1) = bcovar_s / bmod

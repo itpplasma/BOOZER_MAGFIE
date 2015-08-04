@@ -12,6 +12,8 @@ set(EXECUTABLE_OUTPUT_PATH .)
 ### Set compiler flags
 set(CMAKE_Fortran_MODULE_DIRECTORY ./OBJS)
 
+set(CMAKE_Fortran_FLAGS "-g -Wall -Wno-unused-dummy-argument -O2")
+
 ### Define executable
 add_executable(${PROJECT_EXE_NAME}
   magfie_test.f90
