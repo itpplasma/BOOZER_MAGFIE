@@ -1321,7 +1321,9 @@ SUBROUTINE neo_read
      !PRINT *,'nfp: ',nfp
      m_max = m0b+1
      n_max = 2*n0b+1
-     mnmax = m_max*n_max
+     !mnmax = m_max*n_max
+     mnmax = n0b + m0b*n_max + 1
+     
      ! print *, 'm_max,n_max,mnmax: ',m_max,n_max,mnmax
      ! m = 0 , n only >= 0
      ! mnmax = m0b * n_max + n0b + 1
@@ -1361,7 +1363,7 @@ SUBROUTINE neo_read
            READ(r_u1,*) ixm(j),ixn(j),                                    &
                 rmnc(i,j),rmns(i,j),zmnc(i,j),zmns(i,j),                  &
                 lmnc(i,j),lmns(i,j),bmnc(i,j),bmns(i,j)
-           !print *, 'ixm,ixn: ',ixm(j),ixn(j)
+           !print *, 'ixm,ixn: ',ixm(j),ixn(j),mnmax
            !PRINT *,'rmnc,rmns: ',rmnc(i,j),rmns(i,j)
         END DO
      END DO
