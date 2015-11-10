@@ -617,7 +617,7 @@ CONTAINS
                       
                       r(it,ip) = r(it,ip) + ri*cosv + ris*sinv
                       z(it,ip) = z(it,ip) + zi*cosv + zis*sinv
-                      l(it,ip) = l(it,ip) + li*cosv + lis*sinv                     
+                      l(it,ip) = l(it,ip) + li*cosv + lis*sinv                  
 
                       r_tb(it,ip) = r_tb(it,ip) - m*ri*sinv + m*ris*cosv
                       r_pb(it,ip) = r_pb(it,ip) - n*ri*sinv + n*ris*cosv
@@ -628,7 +628,7 @@ CONTAINS
 
                       r_s(it,ip) = r_s(it,ip) + ri_s*cosv + ris_s*sinv
                       z_s(it,ip) = z_s(it,ip) + zi_s*cosv + zis_s*sinv
-                      p_s(it,ip) = p_s(it,ip) + li_s*cosv + lis_s*sinv ! -l_s
+                      p_s(it,ip) = p_s(it,ip) - li_s*cosv - lis_s*sinv ! -l_s
 
                       r_stb(it,ip) = r_stb(it,ip) - m*ri_s*sinv + m*ris_s*cosv
                       z_stb(it,ip) = z_stb(it,ip) - m*zi_s*sinv + m*zis_s*cosv
@@ -1338,6 +1338,8 @@ CONTAINS
        hcurl(3)  = (curr_pol * bb_s       - bmod     * curr_pol_s) / fac 
        hcurl(2)  = (bmod     * curr_tor_s - curr_tor * bb_s      ) / fac 
        hcurl=hcurl * 1d-4                                                 !!!
+       ! ATTENTION: ph and theta components not complete here.
+       ! derivatives of covariant radial B component missing.
 
        !! Modifications by Andreas F. Martitsch (12.03.2014)
        ! boozer_curr_tor, boozer_curr_pol, boozer_psi_pr,
