@@ -78,6 +78,7 @@ SUBROUTINE splinecof3_a(x, y, c1, cn, lambda1, indx, sw1, sw2, &
   USE inter_precision,  ONLY: I4B, DP
   USE inter_interfaces, ONLY: calc_opt_lambda3
   USE solve_systems
+  USE sparse_mod, ONLY: sparse_solve
 
 !-----------------------------------------------------------------------
 
@@ -571,9 +572,10 @@ SUBROUTINE splinecof3_a(x, y, c1, cn, lambda1, indx, sw1, sw2, &
 ! ---------------------------
 
 ! solve system
-  CALL solve_eqsys(MA, inh, info)
-  IF (info /= 0) STOP 'splinecof3_a: Singular matrix in solve_eqsys()!'
-  
+! CALL solve_eqsys(MA, inh, info)
+!  IF (info /= 0) STOP 'splinecof3_a: Singular matrix in solve_eqsys()!'
+
+  CALL sparse_solve(MA, inh)
 
 !  PRINT *, ' A B C D'
 ! take a(), b(), c(), d()

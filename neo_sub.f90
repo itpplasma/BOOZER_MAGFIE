@@ -1324,7 +1324,7 @@ SUBROUTINE neo_read
      !mnmax = m_max*n_max
      mnmax = n0b + m0b*n_max + 1
      
-     ! print *, 'm_max,n_max,mnmax: ',m_max,n_max,mnmax
+     !print *, 'm_max,n_max,mnmax: ',m_max,n_max,mnmax
      ! m = 0 , n only >= 0
      ! mnmax = m0b * n_max + n0b + 1
 

@@ -623,32 +623,32 @@ CONTAINS
                       r_pb(it,ip) = r_pb(it,ip) - n*ri*sinv + n*ris*cosv
                       z_tb(it,ip) = z_tb(it,ip) - m*zi*sinv + m*zis*cosv
                       z_pb(it,ip) = z_pb(it,ip) - n*zi*sinv + n*zis*cosv
-                      p_tb(it,ip) = p_tb(it,ip) + m*li*sinv - m*lis*cosv ! -l_tb
-                      p_pb(it,ip) = p_pb(it,ip) + n*li*sinv - n*lis*cosv ! -l_pb
+                      p_tb(it,ip) = p_tb(it,ip) - m*li*sinv - m*lis*cosv ! +l_tb
+                      p_pb(it,ip) = p_pb(it,ip) - n*li*sinv - n*lis*cosv ! +l_pb
 
                       r_s(it,ip) = r_s(it,ip) + ri_s*cosv + ris_s*sinv
                       z_s(it,ip) = z_s(it,ip) + zi_s*cosv + zis_s*sinv
-                      p_s(it,ip) = p_s(it,ip) - li_s*cosv - lis_s*sinv ! -l_s
+                      p_s(it,ip) = p_s(it,ip) + li_s*cosv + lis_s*sinv ! +l_s
 
                       r_stb(it,ip) = r_stb(it,ip) - m*ri_s*sinv + m*ris_s*cosv
                       z_stb(it,ip) = z_stb(it,ip) - m*zi_s*sinv + m*zis_s*cosv
-                      p_stb(it,ip) = p_stb(it,ip) + m*li_s*sinv - m*lis_s*cosv ! -l_stb
+                      p_stb(it,ip) = p_stb(it,ip) - m*li_s*sinv + m*lis_s*cosv ! +l_stb
 
                       r_spb(it,ip) = r_spb(it,ip) - n*ri_s*sinv + n*ris_s*cosv
                       z_spb(it,ip) = z_spb(it,ip) - n*zi_s*sinv + n*zis_s*cosv
-                      p_spb(it,ip) = p_spb(it,ip) + n*li_s*sinv - n*lis_s*cosv ! -l_spb
+                      p_spb(it,ip) = p_spb(it,ip) - n*li_s*sinv + n*lis_s*cosv ! +l_spb
                       
                       r_tbtb(it,ip) = r_tbtb(it,ip) - m*m*ri*cosv - m*m*ris*sinv
                       z_tbtb(it,ip) = z_tbtb(it,ip) - m*m*zi*cosv - m*m*zis*sinv                      
-                      p_tbtb(it,ip) = p_tbtb(it,ip) + m*m*li*cosv + m*m*lis*sinv ! -l_tbtb
+                      p_tbtb(it,ip) = p_tbtb(it,ip) - m*m*li*cosv - m*m*lis*sinv ! +l_tbtb
 
                       r_pbtb(it,ip) = r_pbtb(it,ip) - m*n*ri*cosv - m*n*ris*sinv
                       z_pbtb(it,ip) = z_pbtb(it,ip) - m*n*zi*cosv - m*n*zis*sinv                      
-                      p_pbtb(it,ip) = p_pbtb(it,ip) + m*n*li*cosv + m*n*lis*sinv ! -l_pbtb                      
+                      p_pbtb(it,ip) = p_pbtb(it,ip) - m*n*li*cosv - m*n*lis*sinv ! +l_pbtb                      
                       
                       r_pbpb(it,ip) = r_pbpb(it,ip) - n*n*ri*cosv - n*n*ris*sinv
                       z_pbpb(it,ip) = z_pbpb(it,ip) - n*n*zi*cosv - n*n*zis*sinv                      
-                      p_pbpb(it,ip) = p_pbpb(it,ip) + n*n*li*cosv + n*n*lis*sinv ! -l_pbpb
+                      p_pbpb(it,ip) = p_pbpb(it,ip) - n*n*li*cosv - n*n*lis*sinv ! +l_pbpb
                    ELSE
                       cosv = cosmth(it,im) * cosnph(ip,in) + sinmth(it,im) * sinnph(ip,in)
                       sinv = sinmth(it,im) * cosnph(ip,in) - cosmth(it,im) * sinnph(ip,in)
