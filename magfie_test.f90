@@ -106,6 +106,27 @@ PROGRAM magfie_test
      PRINT *, 'b_max:   ', b_max
   end do
 
+  ! run loop for second time
+  ! make the loop and produce output
+  do s_k = 1,s_n
+     x(1) = s_arr(s_k)
+     print *, 'Computation for s = ',x(1)
+     do phi_k = 1,phi_n+1
+        x(2) = phi_arr(phi_k)
+        do theta_k = 1,theta_n+1
+           x(3) = theta_arr(theta_k)
+           CALL magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl )
+           CALL magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl )
+           CALL magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl )
+           CALL magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl )
+           CALL magfie( x, bmod, sqrtg, bder, hcovar, hctrvr, hcurl )
+           write(7,*) x,bmod,sqrtg
+        end do
+     end do
+     PRINT *, 'b_min:   ', b_min
+     PRINT *, 'b_max:   ', b_max
+  end do
+  
   DEALLOCATE( magfie_sarray )
   DEALLOCATE( theta_arr )
   DEALLOCATE( phi_arr )
