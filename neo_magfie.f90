@@ -623,8 +623,8 @@ CONTAINS
                       r_pb(it,ip) = r_pb(it,ip) - n*ri*sinv + n*ris*cosv
                       z_tb(it,ip) = z_tb(it,ip) - m*zi*sinv + m*zis*cosv
                       z_pb(it,ip) = z_pb(it,ip) - n*zi*sinv + n*zis*cosv
-                      p_tb(it,ip) = p_tb(it,ip) - m*li*sinv - m*lis*cosv ! +l_tb
-                      p_pb(it,ip) = p_pb(it,ip) - n*li*sinv - n*lis*cosv ! +l_pb
+                      p_tb(it,ip) = p_tb(it,ip) - m*li*sinv + m*lis*cosv ! +l_tb
+                      p_pb(it,ip) = p_pb(it,ip) - n*li*sinv + n*lis*cosv ! +l_pb
 
                       r_s(it,ip) = r_s(it,ip) + ri_s*cosv + ris_s*sinv
                       z_s(it,ip) = z_s(it,ip) + zi_s*cosv + zis_s*sinv
