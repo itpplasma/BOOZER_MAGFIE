@@ -1980,8 +1980,8 @@ SUBROUTINE neo_fourier
                  r_pb(it,ip) = r_pb(it,ip) - n*ri*sinv + n*ri_s*cosv
                  z_tb(it,ip) = z_tb(it,ip) - m*zi*sinv + m*zi_s*cosv
                  z_pb(it,ip) = z_pb(it,ip) - n*zi*sinv + n*zi_s*cosv
-                 p_tb(it,ip) = p_tb(it,ip) + m*li*sinv - m*li_s*cosv ! -l_tb
-                 p_pb(it,ip) = p_pb(it,ip) + n*li*sinv - n*li_s*cosv ! -l_pb
+                 p_tb(it,ip) = p_tb(it,ip) - m*li*sinv + m*li_s*cosv ! +l_tb
+                 p_pb(it,ip) = p_pb(it,ip) - n*li*sinv + n*li_s*cosv ! +l_pb
                  b_tb(it,ip) = b_tb(it,ip) - m*bi*sinv + m*bi_s*cosv
                  b_pb(it,ip) = b_pb(it,ip) - n*bi*sinv + n*bi_s*cosv                
               ELSE
