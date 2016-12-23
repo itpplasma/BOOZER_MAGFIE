@@ -2437,8 +2437,8 @@ SUBROUTINE neo_eval(theta,phi,bval,gval,kval,pval,qval,rval)
               rr_pb = rr_pb - n*ri*sinv + n*ri_s*cosv
               zz_tb = zz_tb - m*zi*sinv + m*zi_s*cosv
               zz_pb = zz_pb - n*zi*sinv + n*zi_s*cosv
-              pp_tb = pp_tb + m*li*sinv - m*li_s*cosv ! -l_tb
-              pp_pb = pp_pb + n*li*sinv - n*li_s*cosv ! -l_pb
+              pp_tb = pp_tb - m*li*sinv + m*li_s*cosv ! +l_tb
+              pp_pb = pp_pb - n*li*sinv + n*li_s*cosv ! +l_pb
               bb_tb = bb_tb - m*bi*sinv + m*bi_s*cosv
               bb_pb = bb_pb - n*bi*sinv + n*bi_s*cosv                
            ELSE
