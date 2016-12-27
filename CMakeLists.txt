@@ -30,7 +30,7 @@ find_library(Ccolamd_lib ccolamd ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
 ### Source files (load external file)
 include (CMakeSources.txt)
 
-set(CMAKE_Fortran_FLAGS "-g -Wall -Wno-unused-dummy-argument -O3")
+set(CMAKE_Fortran_FLAGS "-mkl -Wno-unused-dummy-argument -O3")
 
 ### Define executable
 add_executable(${PROJECT_EXE_NAME}
@@ -65,8 +65,8 @@ target_link_libraries(${PROJECT_EXE_NAME}
         ${SuperLU_lib}
         ${Umfpack_lib} ${Amd_lib} ${Cholmod_lib} ${Colamd_lib} ${Camd_lib} ${Metis_lib} ${Ccolamd_lib}
 	pthread
-	blas
-	lapack
+#	blas
+#	lapack
 )
 
 ### For make install
