@@ -17,26 +17,20 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ./OBJS)
 
 
 ### Find libraries
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-find_library(SuperLU_lib superlu_4.1 ${SUPERLU_DIR}lib NO_DEFAULT_PATH)
-find_library(Umfpack_lib umfpack ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
-find_library(Amd_lib amd ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
-find_library(Cholmod_lib cholmod ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
-find_library(Colamd_lib colamd ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
-find_library(Camd_lib camd ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
-find_library(Metis_lib metis ${SUITESPARSE_DIR}lib ${METIS_PATH} NO_DEFAULT_PATH)
-find_library(Ccolamd_lib ccolamd ${SUITESPARSE_DIR}lib NO_DEFAULT_PATH)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../NEO-2/COMMON/CMAKE_TOOLS")
 
+find_package(SuiteSparse REQUIRED)
+find_package(SuperLU REQUIRED)
 ### Source files (load external file)
 include (CMakeSources.txt)
 
-set(CMAKE_Fortran_FLAGS "-mkl -Wno-unused-dummy-argument -O3")
+set(CMAKE_Fortran_FLAGS "-fPIC -Wno-unused-dummy-argument -O3")
 
 ### Define executable
 add_executable(${PROJECT_EXE_NAME}
   magfie_test.f90
   )
-  
+
 ### Define library
 add_library(boozer_magfie
 	inter_interfaces.f90
@@ -62,8 +56,8 @@ add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
 ### Linking
 target_link_libraries(${PROJECT_EXE_NAME}
 	boozer_magfie
-        ${SuperLU_lib}
-        ${Umfpack_lib} ${Amd_lib} ${Cholmod_lib} ${Colamd_lib} ${Camd_lib} ${Metis_lib} ${Ccolamd_lib}
+    ${SUPERLU_LIBRARIES}
+    ${SUITESPARSE_LIBRARIES}
 	pthread
 #	blas
 #	lapack
@@ -72,4 +66,3 @@ target_link_libraries(${PROJECT_EXE_NAME}
 ### For make install
 # install (TARGETS ${PROJECT_EXE_NAME} DESTINATION /temp/gernot_k/)
 # set_property(TARGET ${PROJECT_EXE_NAME} PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-
