@@ -1,5 +1,5 @@
 ### Basic settings
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.12)
 
 ### Define the project
 project (boozer_magfie)
@@ -8,6 +8,12 @@ enable_language(Fortran)
 ### Define paths to external libraries (load external file)
 include(${CMAKE_SOURCE_DIR}/ProjectConfig.cmake.in)
 
+### Find libraries
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+
+find_package(SuiteSparse REQUIRED)
+find_package(SuperLU REQUIRED)
+
 ### Define the name of the executable
 set(PROJECT_EXE_NAME "magfie_test.x")                  # Define the name
 set(EXECUTABLE_OUTPUT_PATH .)
@@ -15,12 +21,6 @@ set(EXECUTABLE_OUTPUT_PATH .)
 ### Set compiler flags
 set(CMAKE_Fortran_MODULE_DIRECTORY ./OBJS)
 
-
-### Find libraries
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../NEO-2/COMMON/CMAKE_TOOLS")
-
-find_package(SuiteSparse REQUIRED)
-find_package(SuperLU REQUIRED)
 ### Source files (load external file)
 include (CMakeSources.txt)
 

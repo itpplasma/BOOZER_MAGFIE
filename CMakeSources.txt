@@ -2,17 +2,17 @@
 
 ### SUITESPARSE Version 4.5 ###
 set(SUITESPARSE_SRC_FILES
-        ../NEO-2/COMMON/umf4_f77wrapper_ver_4_5.c
-        ../NEO-2/COMMON/umf4_f77zwrapper_ver_4_5.c
+        contrib/umf4_f77wrapper_ver_4_5.c
+        contrib/umf4_f77zwrapper_ver_4_5.c
 )
 set(SUITESPARSE_FLAGS "-fPIC -I${SUITESPARSE_INCLUDE_DIRS}")
-set_source_files_properties(../NEO-2/COMMON/umf4_f77wrapper_ver_4_5.c  PROPERTIES COMPILE_FLAGS "${SUITESPARSE_FLAGS} -DDLONG")
-set_source_files_properties(../NEO-2/COMMON/umf4_f77zwrapper_ver_4_5.c PROPERTIES COMPILE_FLAGS "${SUITESPARSE_FLAGS} -DZLONG")
+set_source_files_properties(contrib/umf4_f77wrapper_ver_4_5.c  PROPERTIES COMPILE_FLAGS "${SUITESPARSE_FLAGS} -DDLONG")
+set_source_files_properties(contrib/umf4_f77zwrapper_ver_4_5.c PROPERTIES COMPILE_FLAGS "${SUITESPARSE_FLAGS} -DZLONG")
 
 ### SUPERLU Version 5.0 ###
 set(SUPERLU_SRC_FILES
-        ../NEO-2/COMMON/c_fortran_dgssv_ver_5_0.c
-        ../NEO-2/COMMON/c_fortran_zgssv_ver_5_0.c
+        contrib/c_fortran_dgssv_ver_5_0.c
+        contrib/c_fortran_zgssv_ver_5_0.c
 )
 set(SUPERLU_FLAGS "-fPIC ${CFLAGS_DEBUG} ${CFLAGS} -I${SUPERLU_INCLUDES}")
 set_source_files_properties(${SUPERLU_SRC_FILES} PROPERTIES COMPILE_FLAGS ${SUPERLU_FLAGS})
