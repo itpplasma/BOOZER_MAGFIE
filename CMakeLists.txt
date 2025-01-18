@@ -5,9 +5,6 @@ cmake_minimum_required (VERSION 2.8.12)
 project (boozer_magfie)
 enable_language(Fortran)
 
-### Define paths to external libraries (load external file)
-include(${CMAKE_SOURCE_DIR}/ProjectConfig.cmake.in)
-
 ### Find libraries
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
