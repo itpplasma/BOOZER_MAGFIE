@@ -12,7 +12,6 @@ include(${CMAKE_SOURCE_DIR}/ProjectConfig.cmake.in)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(SuiteSparse REQUIRED)
-find_package(SuperLU REQUIRED)
 
 ### Define the name of the executable
 set(PROJECT_EXE_NAME "magfie_test.x")                  # Define the name
@@ -48,7 +47,6 @@ add_library(boozer_magfie
 	neo_magfie_perturbation.f90
 	sparse_mod.f90
   	${SUITESPARSE_SRC_FILES}
-	${SUPERLU_SRC_FILES}
 )
 
 add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
@@ -56,7 +54,6 @@ add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
 ### Linking
 target_link_libraries(${PROJECT_EXE_NAME}
 	boozer_magfie
-    ${SUPERLU_LIBRARIES}
     ${SUITESPARSE_LIBRARIES}
 	pthread
 #	blas
