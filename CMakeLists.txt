@@ -23,9 +23,7 @@ include (CMakeSources.txt)
 set(CMAKE_Fortran_FLAGS "-fPIC -Wno-unused-dummy-argument -O3")
 
 ### Define executable
-add_executable(${PROJECT_EXE_NAME}
-  magfie_test.f90
-  )
+add_executable(${PROJECT_EXE_NAME} magfie_test.f90)
 
 ### Define library
 add_library(boozer_magfie
