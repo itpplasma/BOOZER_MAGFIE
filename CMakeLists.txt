@@ -52,14 +52,11 @@ add_library(boozer_magfie
 add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
 
 ### Linking
-target_link_libraries(${PROJECT_EXE_NAME}
-	boozer_magfie
-    ${SUITESPARSE_LIBRARIES}
-	pthread
-#	blas
-#	lapack
+target_link_libraries(boozer_magfie
+	${SUITESPARSE_LIBRARIES}
 )
 
-### For make install
-# install (TARGETS ${PROJECT_EXE_NAME} DESTINATION /temp/gernot_k/)
-# set_property(TARGET ${PROJECT_EXE_NAME} PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+target_link_libraries(${PROJECT_EXE_NAME}
+	boozer_magfie
+	pthread
+)
