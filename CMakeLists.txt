@@ -46,8 +46,16 @@ add_library(boozer_magfie
 
 add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
 
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+find_package(OpenMP REQUIRED COMPONENTS C Fortran)
+
 ### Linking
 target_link_libraries(boozer_magfie
+	OpenMP::OpenMP_C
+	OpenMP::OpenMP_Fortran
+	BLAS::BLAS
+	LAPACK::LAPACK
 	${SUITESPARSE_LIBRARIES}
 )
 
