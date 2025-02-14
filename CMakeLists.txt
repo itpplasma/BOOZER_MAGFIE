@@ -6,7 +6,7 @@ project (boozer_magfie)
 enable_language(Fortran)
 
 ### Find libraries
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 find_package(SuiteSparse REQUIRED)
 
