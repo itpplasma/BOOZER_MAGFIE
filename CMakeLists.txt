@@ -54,9 +54,10 @@ find_package(OpenMP REQUIRED COMPONENTS C Fortran)
 target_link_libraries(boozer_magfie
 	OpenMP::OpenMP_C
 	OpenMP::OpenMP_Fortran
+	${SUITESPARSE_LIBRARIES}
+	metis
 	BLAS::BLAS
 	LAPACK::LAPACK
-	${SUITESPARSE_LIBRARIES}
 )
 
 target_link_libraries(${PROJECT_EXE_NAME}
