@@ -55,10 +55,14 @@ target_link_libraries(boozer_magfie
 	OpenMP::OpenMP_C
 	OpenMP::OpenMP_Fortran
 	${SUITESPARSE_LIBRARIES}
-	metis
 	BLAS::BLAS
 	LAPACK::LAPACK
 )
+
+# Link metis if not on Mac
+if(NOT APPLE)
+	target_link_libraries(boozer_magfie metis)
+endif()
 
 target_link_libraries(${PROJECT_EXE_NAME}
 	boozer_magfie
