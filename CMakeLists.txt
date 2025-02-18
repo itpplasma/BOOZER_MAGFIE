@@ -20,13 +20,11 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ./OBJS)
 ### Source files (load external file)
 include (CMakeSources.txt)
 
-set(CMAKE_Fortran_FLAGS "-fPIC -Wno-unused-dummy-argument -O3")
-
 ### Define executable
 add_executable(${PROJECT_EXE_NAME} magfie_test.f90)
 
 ### Define library
-add_library(boozer_magfie
+add_library(boozer_magfie STATIC
 	inter_interfaces.f90
 	magfie.f90
 	neo_magfie.f90
