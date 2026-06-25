@@ -19,15 +19,20 @@ PROGRAM test_boozmn_field
   USE neo_sub_mod,  ONLY: neo_read_boozmn
   IMPLICIT NONE
 
-  CHARACTER(len=256), PARAMETER :: boozmn_file = &
-       'tokamak_circ/boozmn_circ.nc'
-
+  CHARACTER(len=256) :: boozmn_file
+  INTEGER :: env_len, env_stat
   INTEGER :: nfail
   REAL(dp) :: tol_dp, tol_lo
 
   nfail  = 0
   tol_dp = 1.0e-7_dp
   tol_lo = 1.0e-4_dp
+
+  CALL get_environment_variable('BOOZMN_FIXTURE', boozmn_file, &
+       env_len, env_stat)
+  IF (env_stat /= 0 .OR. env_len == 0) THEN
+     boozmn_file = 'tokamak_circ/boozmn_circ.nc'
+  END IF
 
   WRITE(6,'(a)') 'test_boozmn_field: reading ' // trim(boozmn_file)
   CALL neo_read_boozmn(boozmn_file)

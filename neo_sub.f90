@@ -1067,14 +1067,6 @@ SUBROUTINE neo_read_boozmn(filename)
      lmns = TRANSPOSE(pmnc_b)
   END IF
 
-  DO j = 1, n_max
-     i_n(j) = -n0b + (j-1)
-  END DO
-
-  DO i = 1, m_max
-     i_m(i) = (i-1)
-  END DO
-
   ! Populate pixm and pixn: index of each mode's m and n in i_m and i_n.
   num_m = 0
   num_n = 0
@@ -1086,6 +1078,7 @@ SUBROUTINE neo_read_boozmn(filename)
         IF (m == i_m(j_m)) THEN
            pixm(j) = j_m
            m_found = 1
+           EXIT
         END IF
      END DO
      IF (m_found == 0) THEN
@@ -1098,6 +1091,7 @@ SUBROUTINE neo_read_boozmn(filename)
         IF (n == i_n(j_n)) THEN
            pixn(j) = j_n
            n_found = 1
+           EXIT
         END IF
      END DO
      IF (n_found == 0) THEN

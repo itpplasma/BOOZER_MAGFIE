@@ -82,3 +82,14 @@ target_link_libraries(test_boozmn_field.x
 	boozer_magfie
 	pthread
 )
+
+### Tests
+enable_testing()
+set(BOOZMN_FIXTURE "${PROJECT_SOURCE_DIR}/tokamak_circ/boozmn_circ.nc")
+add_test(NAME test_boozmn_field
+  COMMAND test_boozmn_field.x
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+set_tests_properties(test_boozmn_field PROPERTIES
+  ENVIRONMENT "BOOZMN_FIXTURE=${BOOZMN_FIXTURE}"
+)
