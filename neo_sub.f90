@@ -845,6 +845,229 @@ SUBROUTINE neo_read_control
 END SUBROUTINE neo_read_control
 ! **********************************************************************
 
+SUBROUTINE neo_read_boozmn(filename)
+! Read booz_xform boozmn NetCDF file
+!***********************************************************************
+! Modules
+!***********************************************************************
+  USE netcdf
+  USE neo_precision
+  USE neo_input
+  USE neo_units
+  USE neo_control
+  USE neo_work
+  USE neo_exchange
+!***********************************************************************
+! Local definitions
+!***********************************************************************
+  IMPLICIT NONE
+  CHARACTER(len=*), INTENT(in) :: filename
+
+  INTEGER :: ncid, varid, dimid, status
+  INTEGER :: ns_b, nfp_b, mnmax_loc, i, jl
+  INTEGER :: lasym_int
+  LOGICAL :: lasym_b
+  INTEGER, DIMENSION(:), ALLOCATABLE :: jlist
+  INTEGER, DIMENSION(:), ALLOCATABLE :: ixm_b, ixn_b
+  REAL(dp), DIMENSION(:), ALLOCATABLE :: iota_b, buco_b, bvco_b, phi_b
+  REAL(dp), DIMENSION(:,:), ALLOCATABLE :: bmnc_b, rmnc_b, zmns_b, pmns_b
+  REAL(dp), DIMENSION(:,:), ALLOCATABLE :: bmns_b, rmns_b, zmnc_b, pmnc_b
+  INTEGER :: i_alloc, j
+  CHARACTER(len=100) :: cdum
+
+  status = nf90_open(trim(filename), nf90_nowrite, ncid)
+  IF (status /= nf90_noerr) THEN
+     WRITE(6,*) 'ERROR: Cannot open boozmn file: ', trim(filename)
+     WRITE(6,*) nf90_strerror(status)
+     STOP 'neo_read_boozmn: file open failed'
+  END IF
+
+  status = nf90_inq_dimid(ncid, 'ns_b', dimid)
+  status = nf90_inquire_dimension(ncid, dimid, len=ns_b)
+
+  status = nf90_inq_dimid(ncid, 'mnmax_b', dimid)
+  status = nf90_inquire_dimension(ncid, dimid, len=mnmax_loc)
+
+  status = nf90_inq_varid(ncid, 'nfp_b', varid)
+  status = nf90_get_var(ncid, varid, nfp_b)
+
+  status = nf90_inq_varid(ncid, 'lasym__logical__', varid)
+  IF (status == nf90_noerr) THEN
+     status = nf90_get_var(ncid, varid, lasym_int)
+     lasym_b = (lasym_int /= 0)
+  ELSE
+     lasym_b = .FALSE.
+  END IF
+
+  ALLOCATE(jlist(ns_b), ixm_b(mnmax_loc), ixn_b(mnmax_loc), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for booz_xform read failed!'
+
+  ALLOCATE(iota_b(ns_b), buco_b(ns_b), bvco_b(ns_b), phi_b(ns_b), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for booz_xform profiles failed!'
+
+  ALLOCATE(bmnc_b(ns_b,mnmax_loc), rmnc_b(ns_b,mnmax_loc), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for booz_xform harmonics (1) failed!'
+
+  ALLOCATE(zmns_b(ns_b,mnmax_loc), pmns_b(ns_b,mnmax_loc), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for booz_xform harmonics (2) failed!'
+
+  IF (lasym_b) THEN
+     ALLOCATE(bmns_b(ns_b,mnmax_loc), rmns_b(ns_b,mnmax_loc), stat=i_alloc)
+     IF (i_alloc /= 0) STOP 'Allocation for asymmetric harmonics (1) failed!'
+
+     ALLOCATE(zmnc_b(ns_b,mnmax_loc), pmnc_b(ns_b,mnmax_loc), stat=i_alloc)
+     IF (i_alloc /= 0) STOP 'Allocation for asymmetric harmonics (2) failed!'
+  END IF
+
+  status = nf90_inq_varid(ncid, 'jlist', varid)
+  status = nf90_get_var(ncid, varid, jlist)
+
+  status = nf90_inq_varid(ncid, 'ixm_b', varid)
+  status = nf90_get_var(ncid, varid, ixm_b)
+
+  status = nf90_inq_varid(ncid, 'ixn_b', varid)
+  status = nf90_get_var(ncid, varid, ixn_b)
+
+  status = nf90_inq_varid(ncid, 'iota_b', varid)
+  status = nf90_get_var(ncid, varid, iota_b)
+
+  status = nf90_inq_varid(ncid, 'buco_b', varid)
+  status = nf90_get_var(ncid, varid, buco_b)
+
+  status = nf90_inq_varid(ncid, 'bvco_b', varid)
+  status = nf90_get_var(ncid, varid, bvco_b)
+
+  status = nf90_inq_varid(ncid, 'phi_b', varid)
+  IF (status == nf90_noerr) THEN
+     status = nf90_get_var(ncid, varid, phi_b)
+  ELSE
+     phi_b = 0.0_dp
+  END IF
+
+  status = nf90_inq_varid(ncid, 'bmnc_b', varid)
+  status = nf90_get_var(ncid, varid, bmnc_b)
+
+  status = nf90_inq_varid(ncid, 'rmnc_b', varid)
+  status = nf90_get_var(ncid, varid, rmnc_b)
+
+  status = nf90_inq_varid(ncid, 'zmns_b', varid)
+  status = nf90_get_var(ncid, varid, zmns_b)
+
+  status = nf90_inq_varid(ncid, 'pmns_b', varid)
+  status = nf90_get_var(ncid, varid, pmns_b)
+
+  IF (lasym_b) THEN
+     status = nf90_inq_varid(ncid, 'bmns_b', varid)
+     status = nf90_get_var(ncid, varid, bmns_b)
+
+     status = nf90_inq_varid(ncid, 'rmns_b', varid)
+     status = nf90_get_var(ncid, varid, rmns_b)
+
+     status = nf90_inq_varid(ncid, 'zmnc_b', varid)
+     status = nf90_get_var(ncid, varid, zmnc_b)
+
+     status = nf90_inq_varid(ncid, 'pmnc_b', varid)
+     status = nf90_get_var(ncid, varid, pmnc_b)
+  END IF
+
+  status = nf90_close(ncid)
+  IF (status /= nf90_noerr) THEN
+     WRITE(6,*) 'WARNING: Error closing boozmn file'
+  END IF
+
+  ns = ns_b
+  nfp = nfp_b
+  mnmax = mnmax_loc
+
+  n0b = nfp
+  DO WHILE (nfp / (2*n0b+1) < 1)
+     n0b = n0b - 1
+  END DO
+  n_max = 2*n0b + 1
+
+  m0b = (mnmax - n0b - 1) / n_max
+  m_max = m0b + 1
+
+  ALLOCATE(ixm(mnmax), ixn(mnmax), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for integer arrays failed!'
+
+  ALLOCATE(pixm(mnmax), pixn(mnmax), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for integer pointers failed!'
+
+  ALLOCATE(i_m(m_max), i_n(n_max), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for integer arrays failed!'
+
+  ALLOCATE(es(ns), iota(ns), curr_pol(ns), curr_tor(ns), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for real arrays failed!'
+
+  ALLOCATE(pprime(ns), sqrtg00(ns), b00(ns), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for real arrays failed!'
+
+  ALLOCATE(rmnc(ns,mnmax), zmnc(ns,mnmax), lmnc(ns,mnmax), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for fourier arrays (1) failed!'
+
+  ALLOCATE(bmnc(ns,mnmax), stat=i_alloc)
+  IF (i_alloc /= 0) STOP 'Allocation for fourier arrays (2) failed!'
+
+  IF (lasym_b) THEN
+     ALLOCATE(rmns(ns,mnmax), zmns(ns,mnmax), lmns(ns,mnmax), stat=i_alloc)
+     IF (i_alloc /= 0) STOP 'Allocation for asymmetric arrays (1) failed!'
+
+     ALLOCATE(bmns(ns,mnmax), stat=i_alloc)
+     IF (i_alloc /= 0) STOP 'Allocation for asymmetric arrays (2) failed!'
+  END IF
+
+  ixm = ixm_b
+  ixn = ixn_b
+  bmnc = bmnc_b
+  rmnc = rmnc_b
+  zmns = zmns_b
+  lmnc = 0.0_dp
+
+  IF (lasym_b) THEN
+     bmns = bmns_b
+     rmns = rmns_b
+     zmnc = zmnc_b
+     lmns = 0.0_dp
+  END IF
+
+  DO j = 1, n_max
+     i_n(j) = -n0b + (j-1)
+  END DO
+
+  DO i = 1, m_max
+     i_m(i) = (i-1)
+  END DO
+
+  iota = iota_b(jlist)
+  curr_tor = bvco_b(jlist)
+  curr_pol = buco_b(jlist)
+
+  DO i = 1, ns
+     jl = jlist(i) - 1
+     es(i) = REAL(jl, dp) / REAL(MAXVAL(jlist), dp)
+  END DO
+
+  pprime = 0.0_dp
+  sqrtg00 = 0.0_dp
+  b00 = 1.0_dp
+
+  IF (ANY(phi_b /= 0.0_dp)) THEN
+     flux = -phi_b(ns) / (2.0_dp * 3.141592653589793238_dp)
+  ELSE
+     flux = 1.0_dp
+  END IF
+
+  DEALLOCATE(jlist, ixm_b, ixn_b)
+  DEALLOCATE(iota_b, buco_b, bvco_b, phi_b)
+  DEALLOCATE(bmnc_b, rmnc_b, zmns_b, pmns_b)
+
+  IF (lasym_b) THEN
+     DEALLOCATE(bmns_b, rmns_b, zmnc_b, pmnc_b)
+  END IF
+
+END SUBROUTINE neo_read_boozmn
+
 SUBROUTINE neo_read
 ! Read Boozer Files
 !***********************************************************************
@@ -872,6 +1095,14 @@ SUBROUTINE neo_read
   CHARACTER(45) :: cdum
   REAL(kind=dp) :: xra, xrm
   REAL(kind=dp) :: r_small, r_big
+!***********************************************************************
+! Check if file is a NetCDF booz_xform file
+!***********************************************************************
+  IF (INDEX(in_file, '.nc') > 0) THEN
+     CALL neo_read_boozmn(trim(in_file))
+     RETURN
+  END IF
+
 !***********************************************************************
 ! Open input-unit and read first quantities
 !***********************************************************************
