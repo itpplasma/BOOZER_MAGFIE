@@ -881,7 +881,7 @@ SUBROUTINE neo_read_boozmn(filename)
   CHARACTER(len=*), INTENT(in) :: filename
 
   INTEGER :: ncid, varid, dimid, status
-  INTEGER :: ns_b, nfp_b, mnmax_loc, nsurf, i, jl
+  INTEGER :: ns_b, nfp_b, nboz_b_val, mnmax_loc, nsurf, i, jl
   INTEGER :: lasym_int
   LOGICAL :: lasym_b
   INTEGER :: j, m, n, j_m, j_n, num_m, num_n, m_found, n_found
@@ -923,6 +923,18 @@ SUBROUTINE neo_read_boozmn(filename)
   ELSE
      lasym_b = .FALSE.
   END IF
+
+  status = nf90_inq_varid(ncid, 'nboz_b', varid)
+  IF (status == nf90_noerr) THEN
+     status = nf90_get_var(ncid, varid, nboz_b_val)
+  ELSE
+     nboz_b_val = 0
+  END IF
+
+  IF (lasym_b) &
+     STOP 'neo_read_boozmn: asymmetric (lasym=T) convention not yet supported'
+  IF (nboz_b_val /= 0) &
+     STOP 'neo_read_boozmn: nboz_b!=0 n-sign convention not yet supported'
 
   ALLOCATE(jlist(nsurf), ixm_b(mnmax_loc), ixn_b(mnmax_loc), stat=i_alloc)
   IF (i_alloc /= 0) STOP 'Allocation for booz_xform read failed!'
@@ -1119,6 +1131,7 @@ SUBROUTINE neo_read_boozmn(filename)
   ELSE
      flux = 1.0_dp
   END IF
+  psi_pr = ABS(flux) / twopi
 
   DEALLOCATE(jlist, ixm_b, ixn_b)
   DEALLOCATE(iota_b, buco_b, bvco_b, phi_b)

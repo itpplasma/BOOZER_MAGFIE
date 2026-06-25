@@ -187,6 +187,22 @@ PROGRAM test_boozmn_field
      WRITE(6,'(a,es20.12)') 'PASS rmnc(1,1) = ', rmnc(1,1)
   END IF
 
+  ! ---- psi_pr: must be nonzero and match ABS(flux)/(2*pi) from phi_b edge ----
+  IF (psi_pr == 0.0_dp) THEN
+     WRITE(6,'(a)') 'FAIL psi_pr: is zero (division-by-zero bug not fixed)'
+     nfail = nfail + 1
+  ELSE
+     WRITE(6,'(a,es20.12)') 'PASS psi_pr nonzero = ', psi_pr
+  END IF
+
+  IF (ABS(psi_pr - 0.03368929356107731_dp) > tol_dp * 0.03368929356107731_dp) THEN
+     WRITE(6,'(a,es20.12,a)') 'FAIL psi_pr value: got ', psi_pr, &
+          ', expected 0.03368929356107731'
+     nfail = nfail + 1
+  ELSE
+     WRITE(6,'(a,es20.12)') 'PASS psi_pr = ', psi_pr
+  END IF
+
   ! ---- summary ----
   WRITE(6,'(/,a)') '==============================='
   IF (nfail == 0) THEN
