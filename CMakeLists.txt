@@ -24,6 +24,7 @@ include (CMakeSources.txt)
 ### Define executables
 add_executable(${PROJECT_EXE_NAME} magfie_test.f90)
 add_executable(test_booz_xform_integration.x test_booz_xform_integration.f90)
+add_executable(test_boozmn_field.x test_boozmn_field.f90)
 
 ### Define library
 add_library(boozer_magfie STATIC
@@ -46,6 +47,7 @@ add_library(boozer_magfie STATIC
 
 add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
 add_dependencies(test_booz_xform_integration.x boozer_magfie)
+add_dependencies(test_boozmn_field.x boozer_magfie)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
@@ -72,6 +74,11 @@ target_link_libraries(${PROJECT_EXE_NAME}
 )
 
 target_link_libraries(test_booz_xform_integration.x
+	boozer_magfie
+	pthread
+)
+
+target_link_libraries(test_boozmn_field.x
 	boozer_magfie
 	pthread
 )
