@@ -4,14 +4,14 @@ PROGRAM test_boozmn_field
 ! converter and cross-checks loaded arrays against Python-computed reference
 ! values to floating-point accuracy.
 !
-! Reference values (from bc_to_booz_xform applied to circ.bc):
+! Reference values (from fixed bc_to_booz_xform, libneo PR #347, applied to circ.bc):
 !   nsurf = 63, nfp = 1, mnmax = 19, m0b = 18, n0b = 0
 !   bmnc(1,1) = 1.9633546400  (m=0 n=0, first surface)
 !   bmnc(1,2) = -0.0754078850 (m=1 n=0, first surface)
 !   zmnc(1,2) = 0.0705114198  (zmns_b, Z sin-mode, first surface)
 !   lmnc(1,2) = 3.61678092e-5 (pmns_b, lambda sin-mode, first surface)
-!   iota(1)   = 0.90001405
-!   es(1)     = 0.01562500
+!   iota(1)   = 0.89997       (fixed radial grid: jlist(1)=3, ns_b=65)
+!   es(1)     = 0.0307692308  (= (jlist(1)-1)/MAXVAL(jlist) = 2/65)
 !
   USE neo_precision
   USE neo_input
@@ -162,17 +162,17 @@ PROGRAM test_boozmn_field
   END IF
 
   ! ---- iota and radial coordinate ----
-  IF (ABS(iota(1) - 0.90001405_dp) > tol_lo) THEN
+  IF (ABS(iota(1) - 0.89997_dp) > tol_lo) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL iota(1): got ', iota(1), &
-          ', expected ~0.90001405'
+          ', expected ~0.89997'
      nfail = nfail + 1
   ELSE
      WRITE(6,'(a,es20.12)') 'PASS iota(1) = ', iota(1)
   END IF
 
-  IF (ABS(es(1) - 0.01562500_dp) > tol_dp) THEN
+  IF (ABS(es(1) - 0.0307692308_dp) > tol_lo) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL es(1): got ', es(1), &
-          ', expected 0.01562500'
+          ', expected 0.0307692308 (= 2/65)'
      nfail = nfail + 1
   ELSE
      WRITE(6,'(a,es20.12)') 'PASS es(1) = ', es(1)
