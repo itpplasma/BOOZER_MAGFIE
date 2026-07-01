@@ -9,6 +9,7 @@ enable_language(Fortran)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 find_package(SuiteSparse REQUIRED)
+find_package(NetCDF REQUIRED COMPONENTS Fortran)
 
 ### Define the name of the executable
 set(PROJECT_EXE_NAME "magfie_test.x")                  # Define the name
@@ -20,8 +21,10 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ./OBJS)
 ### Source files (load external file)
 include (CMakeSources.txt)
 
-### Define executable
+### Define executables
 add_executable(${PROJECT_EXE_NAME} magfie_test.f90)
+add_executable(test_booz_xform_integration.x test_booz_xform_integration.f90)
+add_executable(test_boozmn_field.x test_boozmn_field.f90)
 
 ### Define library
 add_library(boozer_magfie STATIC
@@ -43,6 +46,8 @@ add_library(boozer_magfie STATIC
 )
 
 add_dependencies(${PROJECT_EXE_NAME} boozer_magfie)
+add_dependencies(test_booz_xform_integration.x boozer_magfie)
+add_dependencies(test_boozmn_field.x boozer_magfie)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
@@ -55,6 +60,7 @@ target_link_libraries(boozer_magfie
 	${SUITESPARSE_LIBRARIES}
 	BLAS::BLAS
 	LAPACK::LAPACK
+	NetCDF::NetCDF_Fortran
 )
 
 # Link metis if not on Mac
@@ -65,4 +71,25 @@ endif()
 target_link_libraries(${PROJECT_EXE_NAME}
 	boozer_magfie
 	pthread
+)
+
+target_link_libraries(test_booz_xform_integration.x
+	boozer_magfie
+	pthread
+)
+
+target_link_libraries(test_boozmn_field.x
+	boozer_magfie
+	pthread
+)
+
+### Tests
+enable_testing()
+set(BOOZMN_FIXTURE "${PROJECT_SOURCE_DIR}/tokamak_circ/boozmn_circ.nc")
+add_test(NAME test_boozmn_field
+  COMMAND test_boozmn_field.x
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+set_tests_properties(test_boozmn_field PROPERTIES
+  ENVIRONMENT "BOOZMN_FIXTURE=${BOOZMN_FIXTURE}"
 )
