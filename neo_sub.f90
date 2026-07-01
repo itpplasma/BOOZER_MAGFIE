@@ -850,7 +850,7 @@ SUBROUTINE neo_read_boozmn(filename)
 !
 ! Variable mapping from booz_xform NetCDF to neo_input:
 !   zmns_b  (Z sin-modes, symmetric case) -> zmnc  (main Z array in neo)
-!   pmns_b  (lambda sin-modes)            -> lmnc
+!   pmns_b  (geometric minus Boozer phi)  -> -lmnc
 !   zmnc_b  (Z cos-modes, asymmetric)     -> zmns
 !   pmnc_b  (lambda cos-modes, asymmetric)-> lmns
 !
@@ -1045,7 +1045,7 @@ SUBROUTINE neo_read_boozmn(filename)
   IF (i_alloc /= 0) STOP 'Allocation for real arrays failed!'
 
   ! zmnc stores the main Z Fourier amplitudes (sin-harmonics in neo convention).
-  ! lmnc stores the lambda/Boozer-angle sin-harmonic amplitudes.
+  ! lmnc stores (phib - phi) sin-harmonic amplitudes.
   ALLOCATE(rmnc(ns,mnmax), zmnc(ns,mnmax), lmnc(ns,mnmax), stat=i_alloc)
   IF (i_alloc /= 0) STOP 'Allocation for fourier arrays (1) failed!'
 
@@ -1067,8 +1067,7 @@ SUBROUTINE neo_read_boozmn(filename)
   rmnc = TRANSPOSE(rmnc_b)
   ! zmns_b holds Z sin-mode amplitudes; go into zmnc in neo convention.
   zmnc = TRANSPOSE(zmns_b)
-  ! pmns_b holds lambda sin-mode amplitudes (Boozer angle correction).
-  lmnc = TRANSPOSE(pmns_b)
+  lmnc = -TRANSPOSE(pmns_b)
 
   IF (lasym_b) THEN
      bmns = TRANSPOSE(bmns_b)
@@ -3235,7 +3234,6 @@ SUBROUTINE neo_write_bc
 END SUBROUTINE neo_write_bc
 
 END MODULE neo_sub_mod
-
 
 
 

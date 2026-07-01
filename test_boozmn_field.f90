@@ -2,20 +2,20 @@ PROGRAM test_boozmn_field
 ! Real (non-vacuous) test for neo_read_boozmn.
 ! Reads a boozmn NetCDF generated from circ.bc via the libneo bc_to_booz_xform
 ! converter and cross-checks loaded arrays against Python-computed reference
-! values to floating-point accuracy.
+! values for the same-source conversion path.
 !
 ! Reference values (from fixed bc_to_booz_xform, libneo PR #347, applied to circ.bc):
 !   nsurf = 63, nfp = 1, mnmax = 19, m0b = 18, n0b = 0
 !   bmnc(1,1) = 1.9633546400  (m=0 n=0, first surface)
 !   bmnc(1,2) = -0.0754078850 (m=1 n=0, first surface)
 !   zmnc(1,2) = 0.0705114198  (zmns_b, Z sin-mode, first surface)
-!   lmnc(1,2) = 3.61678092e-5 (pmns_b, lambda sin-mode, first surface)
+!   lmnc(1,2) = -3.61678092e-5 (lambda is phib-phi, opposite of pmns_b)
 !   iota(1)   = 0.89997       (fixed radial grid: jlist(1)=3, ns_b=65)
 !   es(1)     = 0.0307692308  (= (jlist(1)-1)/MAXVAL(jlist) = 2/65)
 !
   USE neo_precision
   USE neo_input
-  USE neo_exchange, ONLY: iota, curr_pol, curr_tor
+  USE neo_exchange, ONLY: iota
   USE neo_sub_mod,  ONLY: neo_read_boozmn
   IMPLICIT NONE
 
@@ -137,7 +137,7 @@ PROGRAM test_boozmn_field
      WRITE(6,'(a,es20.12)') 'PASS zmnc(1,2) = ', zmnc(1,2)
   END IF
 
-  ! ---- lmnc: lambda sin-modes (Bug 4: pmns_b must be used, not hardcoded 0) ----
+  ! ---- lmnc: lambda sin-modes (Bug 4: pmns_b must be used with the local sign) ----
   IF (ABS(lmnc(1,1)) > 1.0e-14_dp) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL lmnc(1,1): got ', lmnc(1,1), &
           ', expected ~0'
@@ -146,9 +146,9 @@ PROGRAM test_boozmn_field
      WRITE(6,'(a,es20.12)') 'PASS lmnc(1,1) = ', lmnc(1,1)
   END IF
 
-  IF (ABS(lmnc(1,2) - 3.61678092e-5_dp) > tol_lo * ABS(3.61678092e-5_dp)) THEN
+  IF (ABS(lmnc(1,2) + 3.61678092e-5_dp) > tol_lo * ABS(3.61678092e-5_dp)) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL lmnc(1,2): got ', lmnc(1,2), &
-          ', expected 3.61678092e-5'
+          ', expected -3.61678092e-5'
      nfail = nfail + 1
   ELSE
      WRITE(6,'(a,es20.12)') 'PASS lmnc(1,2) = ', lmnc(1,2)
