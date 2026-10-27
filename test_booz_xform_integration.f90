@@ -1,64 +1,55 @@
 PROGRAM test_booz_xform_integration
-!
-! Integration test for booz_xform (.nc) file reader.
-! This test verifies that:
-! 1. The neo_read subroutine detects .nc files correctly
-! 2. The neo_read_boozmn subroutine exists and can be called
-! 3. Fortran code compiles and links against NetCDF
-!
-! Status: This is a scaffold test. Full functional testing requires
-! generating reference test data from libneo converters (pending issue
-! completion for generating reference boozmn files).
-!
-  USE neo_precision
+  USE neo_precision, ONLY: dp
+  USE magfie_mod, ONLY: magfie
+  USE neo_magfie_mod, ONLY: magfie_spline, magfie_sarray
+  USE, INTRINSIC :: ieee_arithmetic, ONLY: ieee_is_finite
   IMPLICIT NONE
 
-  CHARACTER(len=512) :: test_filename
-  INTEGER :: i, test_status
+  CHARACTER(len=512) :: mode, reference_file
+  REAL(dp) :: x(3), actual(14), expected(14), scale(14)
+  INTEGER :: i, j, k, unit, nfail
 
-  test_status = 0
-
-  ! Test 1: String detection for .nc files
-  test_filename = 'test_boozmn.nc'
-  IF (INDEX(test_filename, '.nc') > 0) THEN
-     WRITE(6, *) 'PASS: .nc file extension detected'
+  CALL get_command_argument(1, mode)
+  CALL get_command_argument(2, reference_file)
+  IF (mode /= 'write' .AND. mode /= 'compare') ERROR STOP 'Expected write or compare'
+  IF (LEN_TRIM(reference_file) == 0) ERROR STOP 'Missing reference file'
+  IF (mode == 'write') THEN
+     OPEN(newunit=unit, file=TRIM(reference_file), status='replace')
   ELSE
-     WRITE(6, *) 'FAIL: .nc file extension NOT detected'
-     test_status = 1
+     OPEN(newunit=unit, file=TRIM(reference_file), status='old')
   END IF
 
-  ! Test 2: Check that standard .bc files are NOT detected as .nc
-  test_filename = 'boozer.bc'
-  IF (INDEX(test_filename, '.nc') == 0) THEN
-     WRITE(6, *) 'PASS: .bc file not detected as .nc'
-  ELSE
-     WRITE(6, *) 'FAIL: .bc file incorrectly detected as .nc'
-     test_status = 1
-  END IF
-
-  ! Test 3: Verify precision module loads
-  WRITE(6, *) 'PASS: neo_precision module available, DP=', dp
-
-  ! Compilation of this test verifies:
-  ! - NetCDF Fortran module is accessible (USE netcdf in neo_read_boozmn)
-  ! - neo_read_boozmn subroutine is syntactically correct
-  ! - Integration with existing neo modules works
-  WRITE(6, *) 'PASS: Module compilation and linking successful'
-
-  IF (test_status == 0) THEN
-     WRITE(6, *) ''
-     WRITE(6, *) '====== ALL TESTS PASSED ======'
-     WRITE(6, *) ''
-     WRITE(6, *) 'Caveat: Full functional testing is deferred pending'
-     WRITE(6, *) 'generation of reference boozmn test files from libneo'
-     WRITE(6, *) 'converters (issues itpplasma/libneo#344-345).'
-     WRITE(6, *) ''
-     WRITE(6, *) 'The booz_xform reader is ready to test once reference'
-     WRITE(6, *) 'data is available. Its signature and data flow are in place.'
-     STOP 0
-  ELSE
-     WRITE(6, *) 'SOME TESTS FAILED'
-     STOP 1
-  END IF
-
+  magfie_spline = 1
+  ALLOCATE(magfie_sarray(3))
+  magfie_sarray = [0.15_dp, 0.4_dp, 0.7_dp]
+  nfail = 0
+  DO i = 1, SIZE(magfie_sarray)
+     x(1) = magfie_sarray(i)
+     DO j = 1, 5
+        x(2) = 0.31_dp * j
+        x(3) = 0.73_dp * j
+        CALL magfie(x, actual(1), actual(2), actual(3:5), &
+             actual(6:8), actual(9:11), actual(12:14))
+        IF (.NOT. ALL(ieee_is_finite(actual))) ERROR STOP 'Non-finite field'
+        IF (mode == 'write') THEN
+           WRITE(unit, '(14es25.16)') actual
+        ELSE
+           READ(unit, *) expected
+           IF (.NOT. ALL(ieee_is_finite(expected))) ERROR STOP 'Non-finite reference'
+           ! The text .bc rounds s to five significant digits; boozmn uses exact half-grid s.
+           scale(1:2) = ABS(expected(1:2))
+           DO k = 3, 12, 3
+              scale(k:k+2) = MAXVAL(ABS(expected(k:k+2)))
+           END DO
+           IF (ANY(ABS(actual - expected) > 1.0e-8_dp + 5.0e-4_dp * scale)) THEN
+              WRITE(*, *) 'FAIL same-source field at s, phi, theta = ', x
+              WRITE(*, *) 'bc: ', expected
+              WRITE(*, *) 'nc: ', actual
+              nfail = nfail + 1
+           END IF
+        END IF
+     END DO
+  END DO
+  CLOSE(unit)
+  IF (nfail /= 0) ERROR STOP 'Same-source field mismatch'
 END PROGRAM test_booz_xform_integration

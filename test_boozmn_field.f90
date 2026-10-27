@@ -1,21 +1,21 @@
 PROGRAM test_boozmn_field
-! Real (non-vacuous) test for neo_read_boozmn.
+! Coefficient checks for the same-source libneo conversion.
 ! Reads a boozmn NetCDF generated from circ.bc via the libneo bc_to_booz_xform
 ! converter and cross-checks loaded arrays against Python-computed reference
 ! values for the same-source conversion path.
 !
-! Reference values (from fixed bc_to_booz_xform, libneo PR #347, applied to circ.bc):
+! Reproduction and producer convention: see tokamak_circ/boozmn_fixture.md.
 !   nsurf = 63, nfp = 1, mnmax = 19, m0b = 18, n0b = 0
 !   bmnc(1,1) = 1.9633546400  (m=0 n=0, first surface)
 !   bmnc(1,2) = -0.0754078850 (m=1 n=0, first surface)
 !   zmnc(1,2) = 0.0705114198  (zmns_b, Z sin-mode, first surface)
-!   lmnc(1,2) = -3.61678092e-5 (lambda is phib-phi, opposite of pmns_b)
+!   lmnc(1,2) = 5.75628561e-6 (lambda is phib-phi, pmns_b*nfp/twopi)
 !   iota(1)   = 0.89997       (fixed radial grid: jlist(1)=3, ns_b=65)
-!   es(1)     = 0.0307692308  (= (jlist(1)-1)/MAXVAL(jlist) = 2/65)
+!   es(1)     = 0.0234375  (= (jlist(1)-1.5)/(ns_b-1) = 1.5/64)
 !
   USE neo_precision
   USE neo_input
-  USE neo_exchange, ONLY: iota
+  USE neo_exchange, ONLY: iota, curr_pol, curr_tor
   USE neo_sub_mod,  ONLY: neo_read_boozmn
   IMPLICIT NONE
 
@@ -146,9 +146,9 @@ PROGRAM test_boozmn_field
      WRITE(6,'(a,es20.12)') 'PASS lmnc(1,1) = ', lmnc(1,1)
   END IF
 
-  IF (ABS(lmnc(1,2) + 3.61678092e-5_dp) > tol_lo * ABS(3.61678092e-5_dp)) THEN
+  IF (ABS(lmnc(1,2) - 5.75628561e-6_dp) > tol_lo * ABS(5.75628561e-6_dp)) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL lmnc(1,2): got ', lmnc(1,2), &
-          ', expected -3.61678092e-5'
+          ', expected 5.75628561e-6'
      nfail = nfail + 1
   ELSE
      WRITE(6,'(a,es20.12)') 'PASS lmnc(1,2) = ', lmnc(1,2)
@@ -170,9 +170,9 @@ PROGRAM test_boozmn_field
      WRITE(6,'(a,es20.12)') 'PASS iota(1) = ', iota(1)
   END IF
 
-  IF (ABS(es(1) - 0.0307692308_dp) > tol_lo) THEN
+  IF (ABS(es(1) - 0.0234375_dp) > tol_lo) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL es(1): got ', es(1), &
-          ', expected 0.0307692308 (= 2/65)'
+          ', expected 0.0234375 (= 1.5/64)'
      nfail = nfail + 1
   ELSE
      WRITE(6,'(a,es20.12)') 'PASS es(1) = ', es(1)
@@ -195,12 +195,21 @@ PROGRAM test_boozmn_field
      WRITE(6,'(a,es20.12)') 'PASS psi_pr nonzero = ', psi_pr
   END IF
 
-  IF (ABS(psi_pr - 0.03368929356107731_dp) > tol_dp * 0.03368929356107731_dp) THEN
+  IF (ABS(psi_pr - 0.2116760743129708_dp) > tol_dp * 0.2116760743129708_dp) THEN
      WRITE(6,'(a,es20.12,a)') 'FAIL psi_pr value: got ', psi_pr, &
-          ', expected 0.03368929356107731'
+          ', expected 0.2116760743129708'
      nfail = nfail + 1
   ELSE
      WRITE(6,'(a,es20.12)') 'PASS psi_pr = ', psi_pr
+  END IF
+
+  IF (ABS(curr_pol(1) - 3.5508_dp) > tol_dp) THEN
+     WRITE(6,*) 'FAIL poloidal current: ', curr_pol(1)
+     nfail = nfail + 1
+  END IF
+  IF (ABS(curr_tor(1) - 0.0047874_dp) > tol_dp) THEN
+     WRITE(6,*) 'FAIL toroidal current: ', curr_tor(1)
+     nfail = nfail + 1
   END IF
 
   ! ---- summary ----

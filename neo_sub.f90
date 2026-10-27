@@ -850,20 +850,16 @@ SUBROUTINE neo_read_boozmn(filename)
 !
 ! Variable mapping from booz_xform NetCDF to neo_input:
 !   zmns_b  (Z sin-modes, symmetric case) -> zmnc  (main Z array in neo)
-!   pmns_b  (geometric minus Boozer phi)  -> -lmnc
-!   zmnc_b  (Z cos-modes, asymmetric)     -> zmns
-!   pmnc_b  (lambda cos-modes, asymmetric)-> lmns
+!   pmns_b  -> lmnc after producer sign and nfp/twopi normalization
 !
 ! NetCDF layout (booz_xform convention):
 !   Scalar variables: ns_b, nfp_b, mnboz_b, mboz_b, nboz_b, lasym__logical__
-!   1-D full-grid (dim 'radius', size ns_b): iota_b, buco_b, bvco_b, phi_b
+!   1-D padded profiles (dim 'radius', size ns_b): iota_b, buco_b, bvco_b
+!   1-D full-grid flux (same dimension): phi_b
 !   1-D mode     (dim 'mn_mode', size mnmax): ixm_b, ixn_b
 !   1-D surface  (dim 'comput_surfs'): jlist
-!   2-D C-order [comput_surfs][mn_mode]: bmnc_b, rmnc_b, zmns_b, pmns_b
-!
-! Fortran NetCDF reads C arrays transposed: allocate as (mn_mode, comput_surfs)
-! so that element [surf][mode] in C becomes (mode, surf) in Fortran.
-! After reading, copy TRANSPOSE into neo_input arrays (ns, mnmax).
+!   2-D harmonics: booz_xform uses [mn_modes][pack_rad], libneo uses
+!   [comput_surfs][mn_mode]. See tokamak_circ/boozmn_fixture.md.
 !***********************************************************************
 ! Modules
 !***********************************************************************
@@ -881,184 +877,184 @@ SUBROUTINE neo_read_boozmn(filename)
   CHARACTER(len=*), INTENT(in) :: filename
 
   INTEGER :: ncid, varid, dimid, status
-  INTEGER :: ns_b, nfp_b, nboz_b_val, mnmax_loc, nsurf, i, jl
+  INTEGER :: ns_b, nfp_b, nboz_b_val, mnmax_loc, nsurf, i
   INTEGER :: lasym_int
-  LOGICAL :: lasym_b
+  LOGICAL :: lasym_b, from_libneo
   INTEGER :: j, m, n, j_m, j_n, num_m, num_n, m_found, n_found
   INTEGER, DIMENSION(:), ALLOCATABLE :: jlist
   INTEGER, DIMENSION(:), ALLOCATABLE :: ixm_b, ixn_b
   REAL(dp), DIMENSION(:), ALLOCATABLE :: iota_b, buco_b, bvco_b, phi_b
   REAL(dp), DIMENSION(:,:), ALLOCATABLE :: bmnc_b, rmnc_b, zmns_b, pmns_b
-  REAL(dp), DIMENSION(:,:), ALLOCATABLE :: bmns_b, rmns_b, zmnc_b, pmnc_b
   INTEGER :: i_alloc
 
   status = nf90_open(trim(filename), nf90_nowrite, ncid)
   IF (status /= nf90_noerr) THEN
      WRITE(6,*) 'ERROR: Cannot open boozmn file: ', trim(filename)
      WRITE(6,*) nf90_strerror(status)
-     STOP 'neo_read_boozmn: file open failed'
+     ERROR STOP 'neo_read_boozmn: file open failed'
   END IF
+
+  ! libneo marks its opposite pmns sign with this provenance attribute.
+  status = nf90_inquire_attribute(ncid, nf90_global, 'bc2boozmn_source')
+  from_libneo = (status == nf90_noerr)
+  IF (status /= nf90_enotatt) CALL check_boozmn(status, 'bc2boozmn_source')
+
+  status = nf90_inq_varid(ncid, 'libneo_s_half', varid)
+  IF (status == nf90_noerr) &
+     ERROR STOP 'neo_read_boozmn: explicit libneo radial grids are not supported'
+  IF (status /= nf90_enotvar) CALL check_boozmn(status, 'libneo_s_half')
 
   ! ns_b and mnboz_b are scalar variables, not dimensions.
   ! comput_surfs is the dimension for 2-D harmonic arrays.
   status = nf90_inq_varid(ncid, 'ns_b', varid)
-  IF (status /= nf90_noerr) STOP 'neo_read_boozmn: ns_b variable not found'
+  CALL check_boozmn(status, 'ns_b')
   status = nf90_get_var(ncid, varid, ns_b)
+  CALL check_boozmn(status, 'ns_b')
 
   status = nf90_inq_varid(ncid, 'mnboz_b', varid)
-  IF (status /= nf90_noerr) STOP 'neo_read_boozmn: mnboz_b variable not found'
+  CALL check_boozmn(status, 'mnboz_b')
   status = nf90_get_var(ncid, varid, mnmax_loc)
+  CALL check_boozmn(status, 'mnmax_loc')
 
   status = nf90_inq_dimid(ncid, 'comput_surfs', dimid)
-  IF (status /= nf90_noerr) STOP 'neo_read_boozmn: comput_surfs dimension not found'
+  CALL check_boozmn(status, 'comput_surfs')
   status = nf90_inquire_dimension(ncid, dimid, len=nsurf)
+  CALL check_boozmn(status, 'len=nsurf')
 
   status = nf90_inq_varid(ncid, 'nfp_b', varid)
+  CALL check_boozmn(status, 'nfp_b')
   status = nf90_get_var(ncid, varid, nfp_b)
+  CALL check_boozmn(status, 'nfp_b')
 
   status = nf90_inq_varid(ncid, 'lasym__logical__', varid)
   IF (status == nf90_noerr) THEN
      status = nf90_get_var(ncid, varid, lasym_int)
+     CALL check_boozmn(status, 'lasym_int')
      lasym_b = (lasym_int /= 0)
   ELSE
+     IF (status /= nf90_enotvar) CALL check_boozmn(status, 'lasym__logical__')
      lasym_b = .FALSE.
   END IF
 
   status = nf90_inq_varid(ncid, 'nboz_b', varid)
   IF (status == nf90_noerr) THEN
      status = nf90_get_var(ncid, varid, nboz_b_val)
+     CALL check_boozmn(status, 'nboz_b_val')
   ELSE
+     IF (status /= nf90_enotvar) CALL check_boozmn(status, 'nboz_b')
      nboz_b_val = 0
   END IF
 
   IF (lasym_b) &
-     STOP 'neo_read_boozmn: asymmetric (lasym=T) convention not yet supported'
+     ERROR STOP 'neo_read_boozmn: asymmetric input is not supported'
   IF (nboz_b_val /= 0) &
-     STOP 'neo_read_boozmn: nboz_b!=0 n-sign convention not yet supported'
+     ERROR STOP 'neo_read_boozmn: non-axisymmetric input is not supported'
+
+  IF (ns_b < 2 .OR. nsurf < 1 .OR. mnmax_loc < 1 .OR. nfp_b < 1) &
+     ERROR STOP 'neo_read_boozmn: invalid dimensions'
 
   ALLOCATE(jlist(nsurf), ixm_b(mnmax_loc), ixn_b(mnmax_loc), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for booz_xform read failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for booz_xform read failed!'
 
   ALLOCATE(iota_b(ns_b), buco_b(ns_b), bvco_b(ns_b), phi_b(ns_b), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for booz_xform profiles failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for booz_xform profiles failed!'
 
-  ! 2-D arrays: NetCDF C-order [comput_surfs][mn_mode] reads into Fortran
-  ! (mnmax_loc, nsurf). After read, TRANSPOSE to get (nsurf, mnmax_loc).
+  ! Normalize both file layouts before copying into the local representation.
   ALLOCATE(bmnc_b(mnmax_loc,nsurf), rmnc_b(mnmax_loc,nsurf), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for booz_xform harmonics (1) failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for booz_xform harmonics (1) failed!'
 
   ALLOCATE(zmns_b(mnmax_loc,nsurf), pmns_b(mnmax_loc,nsurf), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for booz_xform harmonics (2) failed!'
-
-  IF (lasym_b) THEN
-     ALLOCATE(bmns_b(mnmax_loc,nsurf), rmns_b(mnmax_loc,nsurf), stat=i_alloc)
-     IF (i_alloc /= 0) STOP 'Allocation for asymmetric harmonics (1) failed!'
-
-     ALLOCATE(zmnc_b(mnmax_loc,nsurf), pmnc_b(mnmax_loc,nsurf), stat=i_alloc)
-     IF (i_alloc /= 0) STOP 'Allocation for asymmetric harmonics (2) failed!'
-  END IF
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for booz_xform harmonics (2) failed!'
 
   status = nf90_inq_varid(ncid, 'jlist', varid)
+  CALL check_boozmn(status, 'jlist')
   status = nf90_get_var(ncid, varid, jlist)
+  CALL check_boozmn(status, 'jlist')
 
   status = nf90_inq_varid(ncid, 'ixm_b', varid)
+  CALL check_boozmn(status, 'ixm_b')
   status = nf90_get_var(ncid, varid, ixm_b)
+  CALL check_boozmn(status, 'ixm_b')
 
   status = nf90_inq_varid(ncid, 'ixn_b', varid)
+  CALL check_boozmn(status, 'ixn_b')
   status = nf90_get_var(ncid, varid, ixn_b)
+  CALL check_boozmn(status, 'ixn_b')
 
   status = nf90_inq_varid(ncid, 'iota_b', varid)
+  CALL check_boozmn(status, 'iota_b')
   status = nf90_get_var(ncid, varid, iota_b)
+  CALL check_boozmn(status, 'iota_b')
 
   status = nf90_inq_varid(ncid, 'buco_b', varid)
+  CALL check_boozmn(status, 'buco_b')
   status = nf90_get_var(ncid, varid, buco_b)
+  CALL check_boozmn(status, 'buco_b')
 
   status = nf90_inq_varid(ncid, 'bvco_b', varid)
+  CALL check_boozmn(status, 'bvco_b')
   status = nf90_get_var(ncid, varid, bvco_b)
+  CALL check_boozmn(status, 'bvco_b')
 
   status = nf90_inq_varid(ncid, 'phi_b', varid)
-  IF (status == nf90_noerr) THEN
-     status = nf90_get_var(ncid, varid, phi_b)
-  ELSE
-     phi_b = 0.0_dp
-  END IF
+  CALL check_boozmn(status, 'phi_b')
+  status = nf90_get_var(ncid, varid, phi_b)
+  CALL check_boozmn(status, 'phi_b')
 
-  status = nf90_inq_varid(ncid, 'bmnc_b', varid)
-  status = nf90_get_var(ncid, varid, bmnc_b)
+  CALL read_harmonic('bmnc_b', bmnc_b)
 
-  status = nf90_inq_varid(ncid, 'rmnc_b', varid)
-  status = nf90_get_var(ncid, varid, rmnc_b)
+  CALL read_harmonic('rmnc_b', rmnc_b)
 
-  status = nf90_inq_varid(ncid, 'zmns_b', varid)
-  status = nf90_get_var(ncid, varid, zmns_b)
+  CALL read_harmonic('zmns_b', zmns_b)
 
-  status = nf90_inq_varid(ncid, 'pmns_b', varid)
-  status = nf90_get_var(ncid, varid, pmns_b)
-
-  IF (lasym_b) THEN
-     status = nf90_inq_varid(ncid, 'bmns_b', varid)
-     status = nf90_get_var(ncid, varid, bmns_b)
-
-     status = nf90_inq_varid(ncid, 'rmns_b', varid)
-     status = nf90_get_var(ncid, varid, rmns_b)
-
-     status = nf90_inq_varid(ncid, 'zmnc_b', varid)
-     status = nf90_get_var(ncid, varid, zmnc_b)
-
-     status = nf90_inq_varid(ncid, 'pmnc_b', varid)
-     status = nf90_get_var(ncid, varid, pmnc_b)
-  END IF
+  CALL read_harmonic('pmns_b', pmns_b)
 
   status = nf90_close(ncid)
-  IF (status /= nf90_noerr) THEN
-     WRITE(6,*) 'WARNING: Error closing boozmn file'
-  END IF
+  CALL check_boozmn(status, 'close')
 
+  IF (ANY(jlist < 2) .OR. ANY(jlist > ns_b)) &
+     ERROR STOP 'neo_read_boozmn: invalid jlist'
+  IF (ANY(jlist(2:) <= jlist(:nsurf-1))) &
+     ERROR STOP 'neo_read_boozmn: jlist must increase'
+  IF (ANY(ixm_b < 0) .OR. ANY(ixn_b /= 0)) &
+     ERROR STOP 'neo_read_boozmn: only axisymmetric modes are supported'
+
+  ! NetCDF coefficients below are normalized to the symmetric IPP convention.
+  inp_swi = 8
+  lab_swi = 8
   ns = nsurf
   nfp = nfp_b
   mnmax = mnmax_loc
 
-  ! Derive m0b and n0b from actual mode content, not from nfp.
-  ! ixn_b stores n*nfp; n0b = max |n|, m0b = max m.
-  IF (ANY(ixn_b /= 0)) THEN
-     n0b = MAXVAL(ABS(ixn_b)) / nfp_b
-  ELSE
-     n0b = 0
-  END IF
+  n0b = 0
   m0b = MAXVAL(ixm_b)
   n_max = 2*n0b + 1
   m_max = m0b + 1
 
   ALLOCATE(ixm(mnmax), ixn(mnmax), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for integer arrays failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for integer arrays failed!'
 
   ALLOCATE(pixm(mnmax), pixn(mnmax), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for integer pointers failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for integer pointers failed!'
 
   ALLOCATE(i_m(m_max), i_n(n_max), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for integer arrays failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for integer arrays failed!'
+  i_m = 0
+  i_n = 0
 
   ALLOCATE(es(ns), iota(ns), curr_pol(ns), curr_tor(ns), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for real arrays failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for real arrays failed!'
 
   ALLOCATE(pprime(ns), sqrtg00(ns), b00(ns), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for real arrays failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for real arrays failed!'
 
   ! zmnc stores the main Z Fourier amplitudes (sin-harmonics in neo convention).
-  ! lmnc stores (phib - phi) sin-harmonic amplitudes.
+  ! lmnc uses the .bc phase normalization nfp/twopi.
   ALLOCATE(rmnc(ns,mnmax), zmnc(ns,mnmax), lmnc(ns,mnmax), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for fourier arrays (1) failed!'
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for fourier arrays (1) failed!'
 
   ALLOCATE(bmnc(ns,mnmax), stat=i_alloc)
-  IF (i_alloc /= 0) STOP 'Allocation for fourier arrays (2) failed!'
-
-  IF (lasym_b) THEN
-     ALLOCATE(rmns(ns,mnmax), zmns(ns,mnmax), lmns(ns,mnmax), stat=i_alloc)
-     IF (i_alloc /= 0) STOP 'Allocation for asymmetric arrays (1) failed!'
-
-     ALLOCATE(bmns(ns,mnmax), stat=i_alloc)
-     IF (i_alloc /= 0) STOP 'Allocation for asymmetric arrays (2) failed!'
-  END IF
+  IF (i_alloc /= 0) ERROR STOP 'Allocation for fourier arrays (2) failed!'
 
   ixm = ixm_b
   ixn = ixn_b
@@ -1067,16 +1063,9 @@ SUBROUTINE neo_read_boozmn(filename)
   rmnc = TRANSPOSE(rmnc_b)
   ! zmns_b holds Z sin-mode amplitudes; go into zmnc in neo convention.
   zmnc = TRANSPOSE(zmns_b)
-  lmnc = -TRANSPOSE(pmns_b)
-
-  IF (lasym_b) THEN
-     bmns = TRANSPOSE(bmns_b)
-     rmns = TRANSPOSE(rmns_b)
-     ! zmnc_b holds Z cos-mode amplitudes for asymmetric case.
-     zmns = TRANSPOSE(zmnc_b)
-     ! pmnc_b holds lambda cos-mode amplitudes for asymmetric case.
-     lmns = TRANSPOSE(pmnc_b)
-  END IF
+  ! Standard boozmn files store phi-phib; libneo writes phib-phi.
+  lmnc = -TRANSPOSE(pmns_b) * REAL(nfp, dp) / twopi
+  IF (from_libneo) lmnc = -lmnc
 
   ! Populate pixm and pixn: index of each mode's m and n in i_m and i_n.
   num_m = 0
@@ -1113,32 +1102,68 @@ SUBROUTINE neo_read_boozmn(filename)
   END DO
 
   iota = iota_b(jlist)
-  curr_tor = bvco_b(jlist)
-  curr_pol = buco_b(jlist)
+  curr_tor = -buco_b(jlist)
+  curr_pol = -bvco_b(jlist)
 
   DO i = 1, ns
-     jl = jlist(i) - 1
-     es(i) = REAL(jl, dp) / REAL(MAXVAL(jlist), dp)
+     es(i) = (REAL(jlist(i), dp) - 1.5_dp) / REAL(ns_b - 1, dp)
   END DO
 
   pprime = 0.0_dp
   sqrtg00 = 0.0_dp
   b00 = 1.0_dp
 
-  IF (ANY(phi_b /= 0.0_dp)) THEN
-     flux = -phi_b(ns_b) / (2.0_dp * 3.141592653589793238_dp)
-  ELSE
-     flux = 1.0_dp
-  END IF
+  flux = phi_b(ns_b)
+  IF (flux == 0.0_dp) ERROR STOP 'neo_read_boozmn: zero edge flux'
   psi_pr = ABS(flux) / twopi
 
   DEALLOCATE(jlist, ixm_b, ixn_b)
   DEALLOCATE(iota_b, buco_b, bvco_b, phi_b)
   DEALLOCATE(bmnc_b, rmnc_b, zmns_b, pmns_b)
 
-  IF (lasym_b) THEN
-     DEALLOCATE(bmns_b, rmns_b, zmnc_b, pmnc_b)
-  END IF
+CONTAINS
+
+  SUBROUTINE read_harmonic(name, values)
+    CHARACTER(len=*), INTENT(in) :: name
+    REAL(dp), INTENT(out) :: values(mnmax_loc, nsurf)
+    REAL(dp), ALLOCATABLE :: packed(:, :)
+    INTEGER :: id, ndims, ids(nf90_max_var_dims), lengths(2), k
+    CHARACTER(len=nf90_max_name) :: first_dim
+
+    status = nf90_inq_varid(ncid, name, id)
+    CALL check_boozmn(status, name)
+    status = nf90_inquire_variable(ncid, id, ndims=ndims, dimids=ids)
+    CALL check_boozmn(status, name)
+    IF (ndims /= 2) ERROR STOP 'neo_read_boozmn: harmonic rank must be two'
+    DO k = 1, 2
+       status = nf90_inquire_dimension(ncid, ids(k), len=lengths(k))
+       CALL check_boozmn(status, name)
+    END DO
+    status = nf90_inquire_dimension(ncid, ids(1), name=first_dim)
+    CALL check_boozmn(status, name)
+    IF (first_dim == 'mn_mode' .OR. first_dim == 'mn_modes') THEN
+       IF (ANY(lengths /= [mnmax_loc, nsurf])) &
+          ERROR STOP 'neo_read_boozmn: invalid harmonic shape'
+       status = nf90_get_var(ncid, id, values)
+    ELSE
+       IF (ANY(lengths /= [nsurf, mnmax_loc])) &
+          ERROR STOP 'neo_read_boozmn: invalid harmonic shape'
+       ALLOCATE(packed(nsurf, mnmax_loc))
+       status = nf90_get_var(ncid, id, packed)
+       CALL check_boozmn(status, name)
+       values = TRANSPOSE(packed)
+    END IF
+    CALL check_boozmn(status, name)
+  END SUBROUTINE read_harmonic
+
+  SUBROUTINE check_boozmn(code, context)
+    INTEGER, INTENT(in) :: code
+    CHARACTER(len=*), INTENT(in) :: context
+    IF (code /= nf90_noerr) THEN
+       WRITE(*, *) 'neo_read_boozmn: ', context, ': ', TRIM(nf90_strerror(code))
+       ERROR STOP 'Invalid boozmn input'
+    END IF
+  END SUBROUTINE check_boozmn
 
 END SUBROUTINE neo_read_boozmn
 
@@ -1172,9 +1197,11 @@ SUBROUTINE neo_read
 !***********************************************************************
 ! Check if file is a NetCDF booz_xform file
 !***********************************************************************
-  IF (INDEX(in_file, '.nc') > 0) THEN
-     CALL neo_read_boozmn(trim(in_file))
-     RETURN
+  IF (LEN_TRIM(in_file) >= 3) THEN
+     IF (in_file(LEN_TRIM(in_file)-2:LEN_TRIM(in_file)) == '.nc') THEN
+        CALL neo_read_boozmn(TRIM(in_file))
+        RETURN
+     END IF
   END IF
 
 !***********************************************************************
