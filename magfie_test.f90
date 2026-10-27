@@ -3,7 +3,6 @@ PROGRAM magfie_test
        theta_bmin,theta_bmax,phi_bmin,phi_bmax
   USE magfie_mod, ONLY: magfie, stevvo, magfie_deallocate
   USE neo_magfie_mod, ONLY: magfie_spline, magfie_sarray
-  USE nrtype, ONLY: twopi
   IMPLICIT NONE  
   
   INTEGER, PARAMETER     :: DP = KIND(1.0D0)
@@ -134,4 +133,3 @@ PROGRAM magfie_test
   CLOSE(unit=7)
 
 END PROGRAM magfie_test
-
