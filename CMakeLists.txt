@@ -158,3 +158,7 @@ add_test(NAME test_field_standard
 set_tests_properties(test_field_standard PROPERTIES
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/field_standard"
   FIXTURES_REQUIRED "field_reference;standard")
+set_tests_properties(test_field_bc test_field_nc test_field_standard PROPERTIES
+  PASS_REGULAR_EXPRESSION "PASS same-source field evaluation")
+set_tests_properties(test_boozmn_field test_boozmn_standard PROPERTIES
+  PASS_REGULAR_EXPRESSION "ALL TESTS PASSED")

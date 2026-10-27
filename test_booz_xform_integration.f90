@@ -52,4 +52,5 @@ PROGRAM test_booz_xform_integration
   END DO
   CLOSE(unit)
   IF (nfail /= 0) ERROR STOP 'Same-source field mismatch'
+  WRITE(*, '(a)') 'PASS same-source field evaluation'
 END PROGRAM test_booz_xform_integration
